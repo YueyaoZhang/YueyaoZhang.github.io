@@ -1,18 +1,22 @@
-{% if site.disqus %}
+<div class="comment">
+<button class="show-comments"><i class="fa fa-comments" aria-hidden="true"> Load/Add comments</i></button>
 <div id="disqus_thread"></div>
-<script defer>
-  (function () {
-    var d = document,
-      s = d.createElement("script");
-    s.src = "//{{site.disqus-shortname}}.disqus.com/embed.js";
-    s.setAttribute("data-timestamp", +new Date());
-    (d.head || d.body).appendChild(s);
-  })();
+</div>
+<script src={{ "/js/jquery.min.js" | prepend: site.baseurl }}></script>
+<script>
+$(document).ready(function() {
+    $('.show-comments').on('click', function(){
+          var disqus_shortname = '{{site.disqus-shortname}}'; 
+
+          $.ajax({
+                  type: "GET",
+                  url: "http://" + disqus_shortname + ".disqus.com/embed.js",
+                  dataType: "script",
+                  cache: true
+          });
+
+          $(this).fadeOut();
+    });
+});
+
 </script>
-<noscript
-  >Please enable JavaScript to view the
-  <a href="https://disqus.com/?ref_noscript"
-    >comments powered by Disqus.</a
-  ></noscript
->
-{% endif %}
