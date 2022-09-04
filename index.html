@@ -32,12 +32,13 @@
 </head>
 
 <body>
-	<bgsound src="music/close.mp3"></bgsound>
+    <!--bgsound-- src="music/close.mp3"></!--bgsound-->
+    <embed src="music/close.mp3" width="300" height="100" loop=“-1” autostart="True"></embed>
     <!-- Header -->
     <div class="nav">
-    <a class="logo" href="index.html"><img src="style/images/logo.png" width="40" title="红"></a>
- 	<span id="site_runtime" style="color:white; font-size: xx-small;"></span> 
- 	<a class="logo pull-right sobtn"><span class="glyphicon glyphicon-search" style="color: #B4B4B4;"></span></a>
+        <a class="logo" href="index.html"><img src="style/images/logo.png" width="40" title="红"></a>
+        <span id="site_runtime" style="color:white; font-size: xx-small;"></span>
+        <a class="logo pull-right sobtn"><span class="glyphicon glyphicon-search" style="color: #B4B4B4;"></span></a>
     </div>
     <!-- Body -->
 
@@ -58,7 +59,7 @@
                 <div class="cd-full-width">
                     <h2>学术科研成果</h2>
                     <p>记录生活点滴，分享人生喜乐！</p>
-                    
+
                 </div>
             </li>
             <li>
@@ -148,14 +149,14 @@
     <div class="to-top">↑</div>
     <script src="style/js/GeeYo.js"></script>
     <script>
-    var bheigh = $(window).height();
-    var bheigh = bheigh - 115;
-    $(".cd-hero").css('height', bheigh);
-    $(window).resize(function() {
         var bheigh = $(window).height();
         var bheigh = bheigh - 115;
         $(".cd-hero").css('height', bheigh);
-    });
+        $(window).resize(function () {
+            var bheigh = $(window).height();
+            var bheigh = bheigh - 115;
+            $(".cd-hero").css('height', bheigh);
+        });
     </script>
 
 
