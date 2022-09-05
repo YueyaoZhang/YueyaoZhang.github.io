@@ -5,12 +5,12 @@ Zhangyueyao
 AUTHOR:
 DESIGNED & DEVELOPED by Zhangyueyao with FREEHTML5.co
 
-Website: http://freehtml5.co/
-Twitter: http://twitter.com/fh5co
-Facebook: http://facebook.com/fh5co
 
 
 CREDITS:
+
+FreeHtml5.com
+http://freehtml5.co/
 
 Bootstrap
 http://getbootstrap.com/
@@ -39,9 +39,6 @@ http://daneden.me/animate
 jQuery Waypoints
 https://github.com/imakewebthings/waypoints/blog/master/licenses.txt
 
-Demo Images:
-http://pexels.com
-
 Owl Carousel
 http://www.owlcarousel.owlgraphic.com/
 
@@ -51,6 +48,4 @@ http://markdalgleish.com/projects/stellar.js/
 jQuery counTo
 https://github.com/mhuggins/jquery-countTo
 
-Google Map
-https://maps.google.com/
 
