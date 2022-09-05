@@ -778,8 +778,8 @@ body.offcanvas #fh5co-main, body.offcanvas .fh5co-nav-toggle {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   display: table;
   text-align: center;
   background: rgba(0, 0, 0, 0.05);
