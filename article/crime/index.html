@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--link href="./css/ol.css" rel="stylesheet" type="text/css"-->
+    <link href="zyystyle2.css" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="./build/ol.js" charset="utf-8"></script>
+    <script src="./examples/resources/prism/prism.min.js"></script>
+    <script src="./examples/resources/common.js"></script>
+    <script src="./build/jquery.js"></script>
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+	<!--script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script--> 
+	<script src="d3.min.js" charset="utf-8"></script> 
+    <style>
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            -webkit-filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+            filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #cccccc;
+            bottom: 12px;
+            left: -50px;
+            min-width: 110px;
+            opacity: 0.5;
+        }
+        .ol-popup:after, .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+        .ol-popup:after {
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
+        }
+        .ol-popup:before {
+            border-top-color: #cccccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
+        }
+        .ol-popup-closer {
+            text-decoration: none;
+            position: absolute;
+            top: 2px;
+            right: 8px;
+        }
+        .ol-popup-closer:after {
+            content: "- ";
+        }
+		
+	.axis path,  
+	.axis line
+	{
+		fill: none;
+		stroke: #8B8682;
+		shape-rendering: crispEdges;
+	}
+ 
+	.axis text {
+	color: #343434;
+	font-family: sans-serif;
+	font-size: 9px;
+	
+	}
+
+</style>  <!--popup样式-->
+</head>
+<body>
+<!--标题&说明-->
+<div title="This interface is used to demonstrate the visualization results of crime hotspots based on statistical methods of spatio-temporal scanning. The main view is the analysis result of the space-time scanning hotspot;Click the right control bar to switch to the spatial scanning hot spot analysis result; the lower auxiliary view is the practice scanning analysis result, and the right is the hot spot detailed information list." class="toptitle"></div>
+<div>     <!--最大外框-->
+<div id="popup" class="ol-popup">   <!--popup-->
+        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+        <div id="popup-content"></div>
+ </div>
+<div id="map" style="width: 99%;height:100%;position:absolute;z-index:0;top:0;"></div>   <!--底层地图-->
+
+    <!--返回给select函数 屏幕控制参数-->
+<form class="form-inline">
+        <select id="type" class="form-control">
+            <option value="click" selected></option>
+            <option value="singleclick"></option>
+            <option value="pointermove"></option>
+            <option value="none"></option>
+        </select>
+        <span id="status"></span>
+</form>
+
+<script type="text/javascript">
+
+
+    var datatag = 1;//记录当前加载时空数据tag 默认为1
+	var timetag = 1;//记录当前加载空间数据tag 默认为1
+    //创建地图
+    var gaodeLayer = new ol.layer.Tile({
+        source: new ol.source.XYZ({
+            url:'http://webst0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}'
+        })
+    });
+
+
+
+
+   //二、自定义的json数据
+    var geojsonObject = {
+        'type': 'FeatureCollection',
+        'crs': {
+            'type': 'name',
+            'properties': {
+                'name': 'EPSG:4326'
+            }
+        },
+        'features': [{
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [0, 0]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [[4e6, -2e6], [8e6, 2e6]]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [[4e6, 2e6], [8e6, -2e6]]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Polygon',
+                'coordinates': [[[-5e6, -1e6], [-4e6, 1e6], [-3e6, -1e6]]]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'MultiLineString',
+                'coordinates': [
+                    [[-1e6, -7.5e5], [-1e6, 7.5e5]],
+                    [[1e6, -7.5e5], [1e6, 7.5e5]],
+                    [[-7.5e5, -1e6], [7.5e5, -1e6]],
+                    [[-7.5e5, 1e6], [7.5e5, 1e6]]
+                ]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'MultiPolygon',
+                'coordinates': [
+                    [[[-5e6, 6e6], [-5e6, 8e6], [-3e6, 8e6], [-3e6, 6e6]]],
+                    [[[-2e6, 6e6], [-2e6, 8e6], [0, 8e6], [0, 6e6]]],
+                    [[[1e6, 6e6], [1e6, 8e6], [3e6, 8e6], [3e6, 6e6]]]
+                ]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'GeometryCollection',
+                'geometries': [{
+                    'type': 'LineString',
+                    'coordinates': [[-5e6, -5e6], [0, -5e6]]
+                }, {
+                    'type': 'Point',
+                    'coordinates': [4e6, -5e6]
+                }, {
+                    'type': 'Polygon',
+                    'coordinates': [[[1e6, -6e6], [2e6, -4e6], [3e6, -6e6]]]
+                }]
+            }
+        }]
+    };
+	//分时段空间热点数据  固定扫描范围（另外添加说明  可以动态扫描范围var Center25Data =//时空型热点 25w扫描范围
+        var Center1976Data =//空间型热点 1976
+        [
+	{center: [	10.1012363	,	44.0793381	], time:"1976",pro:1},
+	{center: [	3.065448	,	50.6313667	], time:"1976",pro:1},
+	{center: [	-76.5221176	,	3.4206281	], time:"1976",pro:1}
+	    ];
+		 var Center1986Data =//空型热点 1986
+        [
+{center: [	-75.8991394	,	-11.5192003	], time:"1986",pro:1},
+{center: [	-74.3492203	,	4.6673598	], time:"1986",pro:1},
+{center: [	-88.5833359	,	13.3166666	], time:"1986",pro:1},
+{center: [	8.915122	,	50.1353989	], time:"1986",pro:1},
+{center: [	-4.0244761	,	39.8567772	], time:"1986",pro:1},
+{center: [	30.3766956	,	-29.6014385	], time:"1986",pro:1},
+{center: [	124.884697	,	11.7762356	], time:"1986",pro:1},
+
+	    ];
+		 var Center1996Data =//空型热点 1996
+        [
+{center: [	-74.002449	,	4.2547998	], time:"1996",pro:1},
+{center: [	-89.0454102	,	13.7864609	], time:"1996",pro:1},
+{center: [	8.5330725	,	52.0230637	], time:"1996",pro:1},
+{center: [	2.65747	,	36.6250305	], time:"1996",pro:1},
+{center: [	18.6047955	,	44.1290398	], time:"1996",pro:1},
+{center: [	35.8619232	,	37.411602	], time:"1996",pro:1},
+{center: [	72.9223785	,	31.7526035	], time:"1996",pro:1},
+{center: [	90.7291336	,	24.8861008	], time:"1996",pro:1},
+{center: [	79.8741684	,	9.7338886	], time:"1996",pro:1},
+
+	    ];
+		 var Center2006Data =//空型热点 25w扫描范围
+        [
+{center: [	-75.4283295	,	5.7903652	], time:"2006",pro:1},
+{center: [	3.902	,	36.3748894	], time:"2006",pro:1},
+{center: [	44.6406822	,	34.8907013	], time:"2006",pro:1},
+{center: [	65.9036255	,	32.6664047	], time:"2006",pro:1},
+{center: [	88.9342499	,	24.8043289	], time:"2006",pro:1},
+{center: [	125.4339447	,	11.6083088	], time:"2006",pro:1},
+{center: [	22.4499283	,	13.4500952	], time:"2006",pro:1},
+{center: [	70.8230591	,	34.1872215	], time:"2006",pro:1},
+
+	    ];
+		 var Center2016Data =//空间型热点 
+        [
+{center: [	67.6439743	,	36.4661064	], time:"2016",pro:1},
+{center: [	72.3740311	,	32.7825775	], time:"2016",pro:1},
+{center: [	66.544693	,	29.1161366	], time:"2016",pro:1},
+{center: [	87.5360336	,	24.4020061	], time:"2016",pro:1},
+{center: [	81.5102692	,	19.4352341	], time:"2016",pro:1},
+{center: [	44.2907219	,	14.7953377	], time:"2016",pro:1},
+{center: [	41.0128059	,	38.1412239	], time:"2016",pro:1},
+{center: [	44.0066376	,	34.206192	], time:"2016",pro:1},
+{center: [	35.2820091	,	32.6950035	], time:"2016",pro:1},
+{center: [	13.5796633	,	12.5263529	], time:"2016",pro:1},
+{center: [	7.395833	,	6.856667	], time:"2016",pro:1},
+{center: [	-2.95	,	15	], time:"2016",pro:1},
+{center: [	-7.3546419	,	53.9955826	], time:"2016",pro:1},
+{center: [	-73.7322006	,	5.7051849	], time:"2016",pro:1},
+{center: [	29.0048237	,	-0.976624	], time:"2016",pro:1},
+{center: [	24.4662762	,	13.1363039	], time:"2016",pro:1},
+{center: [	125.0086441	,	7.996038	], time:"2016",pro:1},
+{center: [	120.9156799	,	15.6131916	], time:"2016",pro:1},
+{center: [	9.7973251	,	50.9693947	], time:"2016",pro:1},
+{center: [	42.4503593	,	1.642952	], time:"2016",pro:1},
+{center: [	17.5507679	,	30.8746796	], time:"2016",pro:1},
+
+	    ];
+
+	
+	
+    //时空热点扫描数据
+    var Center25Data =//时空型热点 25w扫描范围
+        [
+            {center: [-70.7812271,-34.0354309], time:"1995/3/22",pro:1},
+            {center: [-74.9548874,-11.9902134], time:"1995/3/22",pro:1},
+            {center: [-74.7409744,3.9615223], time:"1995/3/22",pro:1},
+            {center: [-74.7409744,9.4827967], time:"1995/3/22",pro:1},
+            {center: [-90.8556595,14.7788267], time:"1995/3/22",pro:1},
+            {center: [-86.6336212,11.96278], time:"1995/3/22",pro:1},
+            {center: [2.3083229,36.6297493], time:"1995/3/22",pro:2},
+            {center: [-2.0198905,42.5684853], time:"1995/3/22",pro:2},
+            {center: [18.01651,32.1728172], time:"1995/3/22",pro:2},
+            {center: [30.0668716,29.2927055], time:"1995/3/22",pro:2},
+            {center: [14.1660986,9.2981319], time:"1995/3/22",pro:2},
+            {center: [46.252861,4.1304469], time:"1995/3/22",pro:2},
+            {center: [42.3311462,1.4956143], time:"1995/3/22",pro:2},
+            {center: [30.2807846,-1.2136739], time:"1995/3/22",pro:3},
+            {center: [46.5380783,15.0113916], time:"1995/3/22",pro:3},
+            {center: [42.3311462,31.9310799], time:"1995/3/22",pro:3},
+            {center: [46.6093826,34.2604675], time:"1995/3/22",pro:3},
+            {center: [42.3311462,36.5270958], time:"1995/3/22",pro:3},
+            {center: [38.2668228,38.7292061], time:"1995/3/22",pro:3},
+            {center: [38.4094315,34.2015152], time:"1995/3/22",pro:3},
+            {center: [34.7155495,31.9655495], time:"1995/3/22",pro:3},
+            {center: [46.252861,42.5684853], time:"1995/3/22",pro:3},
+            {center: [66.6457825,32.112442], time:"1995/3/22",pro:3},
+            {center: [66.5744781,36.5270958], time:"1995/3/22",pro:3},
+            {center: [62.5101547,34.1425209], time:"1995/3/22",pro:4},
+            {center: [70.6388016,34.0834846], time:"1995/3/22",pro:4},
+            {center: [74.7737503,31.9391022], time:"1995/3/22",pro:4},
+            {center: [66.5744781,27.4103069], time:"1995/3/22",pro:4},
+            {center: [83.2368774,17.711731], time:"1995/3/22",pro:4},
+            {center: [78.9647217,9.2730713], time:"1995/3/22",pro:4},
+            {center: [98.8751526,6.5440874], time:"1995/3/22",pro:4},
+            {center: [103.4391022,3.9505551], time:"1995/3/22",pro:4},
+            {center: [94.7336807,25.0583763], time:"1995/3/22",pro:4},
+            {center: [91.1030273,27.1568222], time:"1995/3/22",pro:4},
+            {center: [86.8960953,24.9793053], time:"1995/3/22",pro:4},
+            {center: [90.6035919,22.4644394], time:"1995/3/22",pro:4},
+            {center: [120.5516968,14.8269396], time:"1995/3/22",pro:4},
+            {center: [125.0436935,7.6832247], time:"1995/3/22",pro:4},
+            {center: [22.5972195,38.826931], time:"1995/3/22",pro:4},
+            {center: [-6.0566669,55.0555382], time:"1995/3/22",pro:4}
+        ];
+
+    var Center50Data =//时空型热点 50w扫描范围
+        [
+            {center: [46.3815536,6.850122], time:"1997/6/18",pro:4},
+            {center: [44.3652077,16.1246014], time:"1997/6/18",pro:4},
+            {center: [35.3878021,29.7693672], time:"1997/6/18",pro:4},
+            {center: [39.4204941,32.00811], time:"1997/6/18",pro:4},
+            {center: [42.3656082,36.3815651], time:"1997/6/18",pro:4},
+            {center: [50.6843987,38.2713928], time:"1997/6/18",pro:4},
+            {center: [45.9308052,42.8721008], time:"1997/6/18",pro:3},
+            {center: [3.0484521,34.3354797], time:"1997/6/18",pro:3},
+            {center: [-1.7477474,42.7151337], time:"1997/6/18",pro:3},
+            {center: [-4.1438193,55.8022881], time:"1997/6/18",pro:3},
+            {center: [-8.2674513,53.1935463], time:"1997/6/18",pro:3},
+            {center: [-72.0175018,9.514164], time:"1997/6/18",pro:3},
+            {center: [-74.6442719,4.6604919], time:"1997/6/18",pro:4},
+            {center: [-84.9921951,13.5195866], time:"1997/6/18",pro:3},
+            {center: [-89.9369049,17.3737488], time:"1997/6/18",pro:1},
+            {center: [-75.987793,-14.4674997], time:"1997/6/18",pro:1},
+            {center: [-68.8225174,-35.1247215], time:"1997/6/18",pro:1},
+            {center: [63.9626274,34.3151245], time:"1997/6/18",pro:2},
+            {center: [71.4733047,33.5262184], time:"1997/6/18",pro:2},
+            {center: [67.0999985,28.8103218], time:"1997/6/18",pro:2},
+            {center: [67.7655029,22.6481609], time:"1997/6/18",pro:2},
+            {center: [78.7938385,7.6474986], time:"1997/6/18",pro:2},
+            {center: [84.2416992,18.4960938], time:"1997/6/18",pro:1},
+            {center: [88.0795288,22.2352905], time:"1997/6/18",pro:1},
+            {center: [92.9425049,26.251503], time:"1997/6/18",pro:1},
+            {center: [99.6938095,4.5755997], time:"1997/6/18",pro:1},
+            {center: [124.5937347,9.2901182], time:"1997/6/18",pro:1},
+            {center: [121.4449997,13.6988897], time:"1997/6/18",pro:1}
+
+        ];
+
+    var Center100Data =//时空型热点 100w扫描范围
+        [//数据错误
+            {center:[102.3069,4.773994],time:"1996/5/14",pro:1},
+            {center:[90.9220428,20.9572964],time:"1996/5/14",pro:1},
+            {center:[80.508728,28.5670776],time:"1996/5/14",pro:1},
+            {center:[68.4608765,23.4083252],time:"1996/5/14",pro:2},
+            {center:[70.8713837,34.4205742],time:"1996/5/14",pro:2},
+            {center:[58.4645004,32.1558838],time:"1996/5/14",pro:2},
+            {center:[45.0092201,1.8634692],time:"1996/5/14",pro:2},
+            {center:[11.1332893,9.602087],time:"1996/5/14",pro:2},
+            {center:[34.2661018,27.8086109],time:"1996/5/14",pro:3},
+            {center:[42.6825676,32.3568802],time:"1996/5/14",pro:3},
+            {center:[42.3973503,40.5981674],time:"1996/5/14",pro:3},
+            {center:[34.7772102,36.8086014],time:"1996/5/14",pro:3},
+            {center:[50.4336967,34.3354797],time:"1996/5/14",pro:3},
+            {center:[-5.8278666,40.6342506],time:"1996/5/14",pro:3},
+            {center:[-4.3622231,54.3163795],time:"1996/5/14",pro:4},
+            {center:[4.8335843,44.6358528],time:"1996/5/14",pro:4},
+            {center:[-90.5977783,13.9263897],time:"1996/5/14",pro:4},
+            {center:[-73.7672272,6.850122],time:"1996/5/14",pro:4},
+            {center:[-76.0147934,-3.9102447],time:"1996/5/14",pro:4},
+            {center:[-69.7150879,-11.8273115],time:"1996/5/14",pro:4}
+        ];
+
+    //contrystyle 测试样式选择功能
+
+    var defaultStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color:  'rgba(120,120,120,0.9)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.1
+        })
+    });
+    var ZerLevelStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(170,170,170,0.7)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.1
+        })
+    });
+    var FisLevelStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(200,200,200,0.9)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.1
+        })
+    });
+    var SecLevelStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(230,230,230,0.9)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.1
+        })
+    });
+    var ThiLevelStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(255,255,255,0.9)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.2
+        })
+    });
+
+    //pointstyle
+    var image = new ol.style.Circle({
+        radius: 5,
+        fill: null,
+        stroke: new ol.style.Stroke({color: 'red', width: 1})
+    });
+    var styles = {
+        'Point': new ol.style.Style({
+            image: image
+        }),
+        'LineString': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'green',
+                width: 1
+            })
+        }),
+        'MultiLineString': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'green',
+                width: 1
+            })
+        }),
+        'MultiPoint': new ol.style.Style({
+            image: image
+        }),
+        'MultiPolygon': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'yellow',
+                width: 1
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255, 255, 0, 0.1)'
+            })
+        }),
+        'Polygon': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'blue',
+                lineDash: [4],
+                width: 3
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(0, 0, 255, 0.1)'
+            })
+        }),
+        'GeometryCollection': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'magenta',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'magenta'
+            }),
+            image: new ol.style.Circle({
+                radius: 10,
+                fill: null,
+                stroke: new ol.style.Stroke({
+                    color: 'magenta'
+                })
+            })
+        }),
+        'Circle': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'red',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,0,0,0.2)'
+            })
+        })
+    };
+    var styleFunction = function(feature) {
+        //alert("checking");//进入了，问题出在选择部分,导致无法返回正确结果
+        return styles[feature.getGeometry().getType()];
+    };
+    var pointstyle  = new ol.style.Style({
+        image: new ol.style.Icon({
+            anchor: [0.5, 0.5],
+            size: [52, 52],
+            offset: [52, 0],
+            opacity: 0.8,
+            scale: 0.25,
+            src: 'bigdata.png'//这个图片的改变会导致显示效果的变化
+        })
+    });
+    var stylepointFunction = function(feature) {
+        return [pointstyle];
+    };
+
+
+
+    //加载geojson数据
+    var GeoJsonLayer = new ol.layer.Vector({
+        source: new ol.source.Vector({
+            projection: 'EPSG:4326',
+            //url: './examples/data/geojson/countries.geojson',
+            //url:'CrimeOutputINTO.json',//部分测试数据
+			url:'CrimeOutput3857into4326.json',//全部数据   用于最终截图
+            //format: new ol.format.TopoJSON
+			format:new ol.format.GeoJSON()
+        }),
+       // style: setThestyle
+        /*style: function(feature) {
+            style.getText().setText(feature.get('name'));
+            return style;
+        }*/
+        style: function(feature, resolution) {
+            GeoJsonLayer.getSource().forEachFeature(function(feature) {
+                var code = feature.get('Join_Count');//好像取出来了也
+                feature.set('incomeLevel', code);
+            });
+            var codetemp = feature.get('incomeLevel');
+            if (codetemp >=5001) {
+                return [ThiLevelStyle];
+            }
+            if (codetemp >=1001&codetemp <=5000) {
+                return [SecLevelStyle];
+            }
+            if (codetemp >=201 & codetemp <=1000 ) {
+                return [FisLevelStyle];
+            }
+            if (codetemp >1 & codetemp <=200) {
+                return [ZerLevelStyle];
+            }
+            else {
+                return [defaultStyle];
+            }
+        }
+    });
+    var PointLayer = new ol.layer.Vector({
+        title: 'add Layer',
+        source: new ol.source.Vector({
+            projection: 'EPSG:4326',
+            url: 'origin4.json',
+            format:new ol.format.GeoJSON()
+            // extractStyles: false
+        }),
+        style: stylepointFunction
+        //style:pointstyle
+    });
+    var vectorSource = new ol.source.Vector({  //测试各类json要素的加载
+        features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+    });
+    //vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6)));
+    var vectorLayer = new ol.layer.Vector({
+        source: vectorSource,
+        format:new ol.format.GeoJSON()
+        //style: styleFunction//根本不会进入这个函数，可是前面验证是进入了的
+    });
+    var ScanDataLayer = new ol.layer.Vector({   //测试画point函数
+        source: new ol.source.Vector()
+    });//动态接入扫描数据，结构体数组
+    var CirclevectorSource = new ol.source.Vector();
+    var CirclevectorLayer = new ol.layer.Vector({   //在map之前建立画圆的图层
+        source: CirclevectorSource
+    });
+    var Anisource = new ol.source.Vector({
+        wrapX: false
+    });
+    var Anivector = new ol.layer.Vector({
+        source: Anisource
+    });
+
+
+    var CurrenView = new ol.View({
+        zoom:3,
+        minZoom: 3,
+        maxZoom: 8,
+        projection: 'EPSG:3857',
+        center : ol.proj.transform([100.2435,23.96822], 'EPSG:4326', 'EPSG:3857')
+        //center : [100.2435,23.96822]
+
+    });
+    //加载地图
+    var map = new ol.Map({
+        target: 'map',
+        controls: ol.control.defaults({
+            attributionOptions: {
+                collapsible: false
+            }
+        }),
+        //layers:[gaodeLayer,GeoJsonLayer,PointLayer,vectorLayer],
+        //layers:[gaodeLayer,GeoJsonLayer],//有地图版本
+		layers:[GeoJsonLayer],//无地图版本
+        view: CurrenView
+    });
+
+
+
+/*
+
+    //一、扫描数据序列加载示例  绘制点point函数
+    var ScanData =//空间型热点
+        [
+            {
+                radius: 5,
+                center: [118.945731,40.382717],
+                property: 1
+            },
+            {
+                radius: 5,
+                center: [128.945731,50.382717],
+                property: 0
+            },
+            {
+                radius: 5,
+                center: [138.945731,60.382717],
+                property: 1
+            }
+        ];
+    //定义全局变量
+    var styleFunction = function(ScanData,ScanDataVector) {
+        //数据解析，循环开始
+        for(var i = 0; i < ScanData.length; i++) {
+            var o = ScanData[i];
+            //载入坐标
+            //alert(o.center[0]);
+            x = o.center[0];//为什么一定要把数据用变量接出来？
+            y = o.center[1];
+
+        
+//画圆法3
+            //var circleGeom = new ol.geom.Polygon([
+                //createCirclePointCoords(x,y,30000,60)]);  
+//画圆法2
+            var circle = new ol.geom.Circle(ol.proj.transform([125.5971431341708, 45.5323780468158], 'EPSG:4326', 'EPSG:3857'), 1000);
+            var CircleFeature = new ol.Feature(circle);
+//画圆法1
+           var precisionCircle = ol.geom.Polygon.circular(
+                // WGS84 Sphere 
+                new ol.Sphere(6378137),
+                [123.5971431341708, 45.5323780468158],
+                1000,
+                // Number of verticies 
+                64).transform('EPSG:4326', 'EPSG:3857');
+            var precisionCircleFeature = new ol.Feature(precisionCircle);
+
+            var ScanDataCircle = new ol.Feature({
+                //geometry:lowpoly
+                //geometry:new ol.geom.Circle(ol.proj.transform([x, y], 'EPSG:4326', 'EPSG:3857'),5)
+               //geometry:new ol.geom.Circle([x,y],20)
+               //geometry:new ol.geom.Polygon.circular(wgs84Sphere, [x,y], 5)
+               geometry:new ol.geom.Point(ol.proj.fromLonLat([x,y]))
+               //geometry: new ol.geom.Point([o.center[0],o.center[1]])//这一句为什么不可以？
+            });
+            if(o.property==1){   //第一类热点
+                ScanDataCircle.setStyle(new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 25,//做某种计算
+                        fill: new ol.style.Fill({
+                            color: 'yellow'
+                        }),
+                        stroke: new ol.style.Stroke({
+                            color: 'yellow',
+                            size: 4
+                        })
+                    })
+                }));
+            }
+            if(o.property==0){   //第二类热点
+                ScanDataCircle.setStyle(new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 35,
+                        fill: new ol.style.Fill({
+                            color: 'red'
+                        }),
+                        stroke: new ol.style.Stroke({
+                            color: 'red',
+                            size: 4
+                        })
+                    })
+                }));
+            }
+            ScanDataLayer.getSource().addFeature(ScanDataCircle);
+            map.addLayer(ScanDataLayer);
+            //处理扫描结果 生成vector source
+        }//循环结束,该画法生成的结果不会放缩
+    };
+    styleFunction(ScanData,ScanDataLayer);//运行
+	
+	
+*/
+
+
+    var features;
+    //属性查询
+    function getAttr() {
+        // GeoJsonLayer.getSource().getFeatures();
+        features = GeoJsonLayer.getSource().getFeatures();
+        featureshot = GeoJsonLayer.getSource().getProperties('name');
+        featuresxy = GeoJsonLayer.getSource().getFeatures()[1].getGeometry();
+        featurespro = GeoJsonLayer.getSource().getFeatures()[1].getProperties('name');
+        //features2 = feature.get("hotpot");
+        features1 = GeoJsonLayer.getSource().getFeatureById('name');
+        features2 = GeoJsonLayer.getProperties().type;
+
+    }
+
+    //绘制圆 函数
+    //定义全局变量 绘制点
+    var radius = 300000;//全局变量 半径
+    var currentcolor = [];  //色彩的全局变量
+    var DrawHotpot = function(Center25Data,CirclevectorLayer) {
+        //数据解析，循环开始
+        currentcolor = [];//数据初始化
+        for(var i = 0; i < Center25Data.length; i++) {
+            var co = Center25Data[i];
+            //载入坐标
+            //alert(co);//这个就是object类型
+            var cx = co.center[0];//为什么一定要把数据用变量接出来？
+            var cy = co.center[1];
+            var ctime = co.time;
+            console.log(ctime);
+//添加圆geometry到featrue
+            radius = 300000+(datatag-1)*200000;//变化半径
+            //var circle = ol.geom.Polygon.circular(wgs84Sphere, [x, y], radius, 64);
+            var circle = ol.geom.Polygon.circular(
+                /* WGS84 Sphere */
+                new ol.Sphere(6378137),
+                [cx, cy],
+                radius,
+                /* Number of verticies */
+                64).transform('EPSG:4326', 'EPSG:3857');
+            var CircleFeature25 = new ol.Feature(circle);
+            CirclevectorLayer.getSource().addFeature(CircleFeature25);
+            CircleFeature25.set('time', ctime);//写入属性
+            CircleFeature25.set('Labelx', cx);//写入属性
+            CircleFeature25.set('Labely', cy);//写入属性
+            if(co.pro==1){   //间歇热点  在syle这部分添加动画
+                CircleFeature25.setStyle(new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: '#CD4F39',
+                        width: 0.2
+                    }),
+                    fill: new ol.style.Fill({
+                        color: 'transparent'
+                    })
+                }));
+                currentcolor.push('#CD4F39');
+            };
+            if(co.pro==2){   //消失热点
+                CircleFeature25.setStyle(new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: '#FFD700',
+                        width: 0.2
+                    }),
+                    fill: new ol.style.Fill({
+                        color: 'transparent'
+                    })
+                }));
+                currentcolor.push('#FFD700');
+            };
+            if(co.pro==3){   //新增热点
+                CircleFeature25.setStyle(new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: '#FF7256' ,
+                        width: 0.2
+                    }),
+                    fill: new ol.style.Fill({
+                        color: 'transparent'
+                    })
+                }));
+                currentcolor.push('#FF7256');
+            };
+            if(co.pro==4){   //持久热点
+                CircleFeature25.setStyle(new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: '#FFA54F',
+                        width: 0.2
+                    }),
+                    fill: new ol.style.Fill({
+                        color: 'transparent'
+                    })
+                }));
+                currentcolor.push('#FFA54F');
+            };
+            //处理扫描结果 生成vector source
+
+        }//循环结束
+        map.addLayer(CirclevectorLayer);
+
+    };
+    DrawHotpot(Center25Data,CirclevectorLayer);//运行 加载热点函数
+
+//动画效果
+
+    //利用点图层做中心动效
+    var featureCollection=[];
+    var DrawAni = function(Center25Data,Anivector) {
+        featureCollection=[];//初始化 清空
+        for (var i = 0; i < Center25Data.length; i++) {
+            var co = Center25Data[i];
+            //载入坐标
+            //alert(co);//这个就是object类型
+            var cx = co.center[0];//为什么一定要把数据用变量接出来？
+            var cy = co.center[1];
+            var geom = new ol.geom.Point(ol.proj.transform([cx, cy],
+                'EPSG:4326', 'EPSG:3857'));
+            var Pointfeature = new ol.Feature(geom);
+            Pointfeature.setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 10,
+                    stroke: new ol.style.Stroke({
+                        color: currentcolor[i],
+                        size: 1
+                    })
+                })
+            }));
+            featureCollection.push(Pointfeature);//添加到集合中
+            Anisource.addFeature(Pointfeature);
+        }
+        map.addLayer(Anivector);
+    };
+    DrawAni(Center25Data,Anivector);//运行 加载热点函数
+
+    var pointradius=0;
+    //25 r20  50 r50 100r100
+    map.on('postcompose', function(){
+        // 增大半径，最大20
+        pointradius++;
+        pointradius = pointradius % ((19+(datatag+timetag-1)*10)*(CurrenView.getZoom()-2));//半径最大为20
+        // 设置样式
+        for(var i=0;i<featureCollection.length;i++){
+            featureCollection[i].setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: pointradius,
+                    fill: new ol.style.Fill({
+                        color: 'rgba(255, 255, 255, 0.2 )'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: currentcolor[i],
+                        size: 1
+                    })
+                })
+            }));
+        }
+    });
+
+
+    //添加刷新函数
+    //window.setInterval(DrawAni(Center25Data,Anivector), 100);
+
+
+
+
+    //popup 弹出框
+    var container = document.getElementById('popup');
+    var content = document.getElementById('popup-content');
+    var closer = document.getElementById('popup-closer');
+
+    var overlay = new ol.Overlay({
+        element: container,
+        autoPan: true,
+        autoPanAnimation: {
+            duration: 250
+        }
+    });
+
+    closer.onclick = function() {
+        overlay.setPosition(undefined);
+        closer.blur();
+        return false;
+    };
+
+    // 创建select control
+    var select = null;  // ref to currently selected interaction
+
+    // select interaction working on "singleclick"
+    var selectSingleClick = new ol.interaction.Select();
+
+    // select interaction working on "click"
+    var selectClick = new ol.interaction.Select({
+        condition: ol.events.condition.click
+    });
+    var selectElement = document.getElementById('type');
+
+    var changeInteraction = function() {
+        if (select !== null) {
+            map.removeInteraction(select);
+        }
+        var value = selectElement.value;
+        if (value == 'singleclick') {
+            select = selectSingleClick;
+        }
+        if (value == 'click') {
+            select = selectClick;
+        }
+        if (select !== null) {
+            map.addInteraction(select);
+            select.on('select', function(e) {  //选择到要素,竟然是这个函数先触发
+                //高亮要素,获取城市信息
+                //var fl = select.getFeatures().getArray().length;
+                //var fJ = select.getFeatures().get('center');
+                //var fC = select.getFeatures().getArray()[0].get('center');
+                //var fI =  e.target.getFeatures().getArray()[0].get('center');
+                // var fF =  e.target.getFeatures().getArray()[0].getProperties();
+                // var mName = fF.center;
+                var mFeatures = e.target.getFeatures();
+                //console.log(mFeatures);
+                var mFeatureArray = mFeatures.getArray();
+               // console.log(mFeatureArray);
+                var mFeature = mFeatureArray[0];
+                var mProperties = mFeature.getProperties();
+               // console.log(mFeature);
+                var mTime = mProperties.time; //直接换成time，属性名称  获取到时间属性
+                var mx = mProperties.Labelx; //直接换成time，属性名称  获取到时间属性
+                var my = mProperties.Labely; //直接换成time，属性名称  获取到时间属性
+               // console.log(mName);
+                //var fP =  e.target.getProperties();//这个好像get到了object.CODE
+                //var code = e.target.get('time');//好像取出来了也这一句在前文是取出拉了的  这里只能去出undefined
+
+               var showLBS = ol.proj.transform([mx,my+3], 'EPSG:4326', 'EPSG:3857');
+                content.innerHTML = 'time:<code>' + mTime + '</code>';//还需要添加城市信息
+                overlay.setPosition(showLBS);
+                map.addOverlay(overlay);
+                
+                map.on('singleclick', function(evt) {  //选择到点,获取坐标 这样嵌套写真的没问题吗
+                    var coordinate = evt.coordinate;
+                    var hdms = ol.coordinate.toStringHDMS(ol.proj.transform(
+                        coordinate, 'EPSG:3857', 'EPSG:4326'));
+                    //alert(coordinate);//undefined
+                    content.innerHTML = '<p>You clicked here:</p><code>' + hdms + '</code>';
+                    //载入选择feature处获得的时间/城市信息，判断如果没有获取到城市信息，则显示“无
+                    overlay.setPosition(coordinate);
+                    map.addOverlay(overlay);
+                });
+
+//var coordinates = e.target.getGeometry().getCoordinates()[0];
+                // var polygon = e.feature.getGeometry();//有误
+                //var center = polygon.getCenter(),radius = polygon.getRadius(),extent = polygon.getExtent();
+                //alert(center);//undefined
+                // var geomType = e.target.getFeatures().getArray()[0].getGeometry().getType().toLowerCase();
+                //console.log(mName);
+                //alert(mName);//undefined
+            });
+
+
+
+        }
+    };
+
+    selectElement.onchange = changeInteraction;
+    changeInteraction();
+
+
+</script>
+
+
+<!--热点属性图例-->
+<div id="HotpotLegend" style="width: 3%;height:50px;z-index:3;bottom:0;margin-bottom: 600px;margin-left: 1040px;position:absolute;">
+<svg xmlns="https://www.w3.org/TR/SVG/">
+  <circle cx="60" cy="20" r="10" style="stroke:#CD4F39; fill:transparent"/>
+  <circle cx="100" cy="20" r="10" style="stroke:#FFA54F; fill:transparent"/>
+  <circle cx="140" cy="20" r="10" style="stroke:#FF7256; fill:transparent"/>
+  <circle cx="180" cy="20" r="10" style="stroke:#FFD700; fill:transparent"/>
+</svg>
+</div>
+<div id="HotpotText" style="width: 10%;height:50px;z-index:3;bottom:0;margin-bottom: 580px;margin-left: 1080px;position:absolute;font-family: sans-serif;
+	color:#828282;
+	font-size: 11px">
+<p>continue&nbspinterim&nbsp&nbsp&nbspvanish&nbsp&nbsp&nbsp&nbspnew</p>
+</div>
+
+
+<!--空间热点年份切换控件-->
+<div class="myControll2" style="width: 10%;height:50px;z-index:3;bottom:0">
+    <button id="TimeOne" class="Mybutton2" onclick="changeTimeOne()"></button>
+    
+</div>
+<div class="myControll3" style="width: 10%;height:50px;z-index:3;bottom:0">
+    <button id="TimeTwo"  class="Mybutton2" onclick="changeTimeTwo()"></button>
+</div>
+<div class="myControll4" style="width: 10%;height:50px;z-index:3;bottom:0">
+    <button id="TimeThree" class="Mybutton2" onclick="changeTimeThree()"></button>
+</div>
+<div class="myControll5" style="width: 10%;height:50px;z-index:3;bottom:0">
+	<button id="TimeFour" class="Mybutton2" onclick="changeTimeFour()"></button>
+</div>
+<div class="myControll6" style="width: 10%;height:50px;z-index:3;bottom:0">
+	<button id="TimeFive" class="Mybutton2" onclick="changeTimeFive()"></button>
+</div>
+
+<div class="divcss5-a"  style="width: 1%;height:40px;z-index:3;bottom:0;position:absolute;margin-bottom: 575px;margin-left: 1277px;"> 
+<p class="MyTime" >
+1976<br /> 
+<br /> 
+<br />
+<br />  
+<br /> 
+1986<br /> 
+<br /> 
+<br /> 
+<br /> 
+<br /> 
+1996<br /> 
+<br /> 
+<br /> 
+<br /> 
+<br /> 
+2006<br /> 
+<br /> 
+<br /> 
+<br /> 
+<br /> 
+2016<br /> 
+</p>
+</div> 
+
+<script>
+ var changeTimeOne = function() {  //所有空间热点设置相同的半径
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2;
+        DrawHotpot(Center1976Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center1976Data,Anivector);//运行 加载动效函数
+ };
+  var changeTimeTwo = function() {
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2;
+        DrawHotpot(Center1986Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center1986Data,Anivector);//运行 加载动效函数
+ };
+  var changeTimeThree = function() {
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2;
+        DrawHotpot(Center1996Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center1996Data,Anivector);//运行 加载动效函数
+ };
+  var changeTimeFour = function() {
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2
+        DrawHotpot(Center2006Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center2006Data,Anivector);//运行 加载动效函数
+ };
+  var changeTimeFive = function() {
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2;
+        DrawHotpot(Center2016Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center2016Data,Anivector);//运行 加载动效函数
+ };
+</script>
+
+
+<!--时空热点图层切换控件-->
+<div class="myControll1" style="width: 12%;height:48px;z-index:3;bottom:0">
+    <button id="buttonOne" class="Mybutton" onclick="changeDataOne()"></button>
+    <button id="buttonTwo"  class="Mybutton" onclick="changeDataTwo()"></button>
+    <button id="buttonThree" class="Mybutton" onclick="changeDataThree()"></button>
+    <!--p class="MyTitle" >SCAN EXTENT</p-->
+</div>
+
+<!--上层图表框架-->
+<!--div id="myCharts" style="width: 99%;height:255px;position:absolute;z-index:1;bottom:0;background: #B0C4DE;opacity: 0.5;"-->
+<!--底层背景 start-->
+<div class="myCharts" style="width: 99%;height:240px;z-index:1;bottom:0">
+
+<script>  //更新图层 改变datatag
+    //datatag
+    var changeDataOne = function() {
+        //清空现有图层
+        //map.removeLayer(CirclevectorLayer);//只能运行一次
+        //CirclevectorLayer.clear();
+        //CirclevectorLayer.refresh();
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        //接受来自按钮1的标志
+        datatag = 1;
+		timetag = 0;
+        //layer2= createLayer("layername", "layerid", f);
+        //map.addLayer(layer2);
+        DrawHotpot(Center25Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center25Data,Anivector);//运行 加载动效函数
+       // map.render();
+        //alert("Loaded");
+        //map.addLayer(CirclevectorLayer);
+
+    };
+    var changeDataTwo = function() {
+    //接受来自按钮2的标志
+
+        //清空现有图层
+        //map.removeLayer(CirclevectorLayer);//只能运行一次
+        //CirclevectorLayer.clear();
+        //CirclevectorLayer.refresh();
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 2;
+		timetag = 0;
+        //layer2= createLayer("layername", "layerid", f);
+        //map.addLayer(layer2);
+        DrawHotpot(Center50Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center50Data,Anivector);//运行 加载动效函数
+        // map.render();
+        //alert("Loaded");
+        //map.addLayer(CirclevectorLayer);
+};
+    var changeDataThree = function() {
+    //接受来自按钮3的标志  坐标飘了
+
+        //清空现有图层
+        //map.removeLayer(CirclevectorLayer);//只能运行一次
+        //CirclevectorLayer.clear();
+        //CirclevectorLayer.refresh();
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        //接受来自按钮1的标志
+        datatag = 3;
+		timetag = 0;
+        //layer2= createLayer("layername", "layerid", f);
+        //map.addLayer(layer2);
+        DrawHotpot(Center100Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center100Data,Anivector);//运行 加载动效函数
+        // map.render();
+        //alert("Loaded");
+        //map.addLayer(CirclevectorLayer);
+};
+</script>
+
+<!--图表模块1-->
+<div id="myChartsOne" class = "TimeCharts" style="width: 70%;height:240px;z-index:2;position:absolute;margin-top:0px;background-image:url('back.png');">
+<div id="yAxies" style="width: 600px;height:30px;z-index:2;position:absolute;margin-top:210px;margin-left:100px;font-family: sans-serif;color:#FFFFFF;font-size: 9px">
+<p>1975</p>
+</div>
+<div id="yAxies" style="width: 600px;height:30px;z-index:2;position:absolute;margin-top:210px;margin-left:300px;font-family: sans-serif;color:#FFFFFF;font-size: 9px">
+<p>1985</p>
+</div>
+<div id="yAxies" style="width:600px;height:30px;z-index:2;position:absolute;margin-top:210px;margin-left:500px;font-family: sans-serif;color:#FFFFFF;font-size: 9px">
+<p>1995</p>
+</div>
+<div id="yAxies" style="width: 600px;height:30px;z-index:2;position:absolute;margin-top:210px;margin-left:700px;font-family: sans-serif;color:#FFFFFF;font-size: 9px">
+<p>2005</p>
+</div>
+<div id="yAxies" style="width: 600px;height:30px;z-index:2;position:absolute;margin-top:210px;margin-left:900px;font-family: sans-serif;color:#FFFFFF;font-size: 9px">
+<p>2015</p>
+</div>	
+<div id="yAxies" style="width: 30px;height:200px;z-index:2;position:absolute;margin-top:11px;margin-left:925px;font-family: sans-serif;color:#FFFFFF;font-size: 8px">
+<p>2</p>
+</br>
+<p>4</p>
+</br>
+<p>6</p>
+</br>
+<p>8</p>
+</br>
+<p>10</p>
+</br>
+<p>Month</p>
+</div>	
+</div>
+<script>	
+//声明二维数组
+		
+var colorarr = [
+[39,55,69,79,72,61,68,42,42,55,41,26],
+[44,43,50,57,56,24,24,47,37,26,39,23],
+[37,29,38,22,74,34,61,49,35,36,29,50],
+[44,37,46,44,47,27,33,37,37,36,36,48],
+[45,40,62,46,51,52,33,31,47,53,65,52],
+[32,68,74,57,82,49,43,67,71,96,47,53],
+[71,71,59,78,107,86,80,72,73,83,81,60],
+[84,68,114,63,81,145,133,136,97,165,76,152],
+[162,149,125,112,124,99,77,101,127,128,126,194],
+[250,233,259,212,361,250,160,210,177,222,153,171],
+[220,181,254,298,198,273,224,183,216,240,207,168],
+[209,214,207,208,223,175,196,265,187,234,200,268],
+[232,180,277,251,236,164,216,224,173,251,137,203],
+[292,198,232,221,296,251,218,225,236,259,233,209],
+[278,286,374,370,299,249,345,331,294,233,239,197],
+[234,184,224,156,422,296,263,266,205,217,231,217],
+[224,200,300,249,248,344,266,236,216,199,166,211],
+[239,269,227,306,246,295,297,289,289,250,314,162],
+[288,324,358,276,326,335,340,260,238,326,319,330],
+[324,378,320,342,359,272,323,366,499,472,377,291],
+[286,240,398,339,413,394,371,339,294,323,274,217],
+[398,336,275,327,349,350,514,426,406,528,434,339],
+[366,335,514,367,459,307,389,390,456,508,532,450],
+[329,318,419,366,315,243,257,212,245,240,219,295],
+[217,254,270,169,323,289,305,247,300,315,169,223],
+[298,233,233,249,288,190,276,234,287,305,212,251],
+[239,266,256,234,189,308,337,349,257,279,218,268],
+[81,95,63,66,54,41,105,125,65,114,90,34],
+[63,61,184,88,94,183,158,113,79,165,142,64],
+[186,113,95,98,130,167,157,120,227,172,182,167],
+[164,136,169,116,98,80,78,568,141,99,135,123],
+[136,145,83,106,185,108,93,142,75,94,104,60],
+[195,114,195,83,157,62,117,35,74,59,107,65],
+[79,44,80,95,93,156,113,121,105,118,73,84],
+[176,69,198,209,231,144,268,260,119,145,74,115],
+[282,434,120,405,215,120,266,238,158,185,163,164],
+[174,234,228,217,171,588,223,200,165,332,533,174],
+[329,155,321,505,499,510,553,461,268,328,431,443],
+[403,339,412,416,417,432,467,401,341,419,337,336],
+[276,411,368,359,462,376,410,409,527,372,467,385],
+[402,376,447,436,450,399,387,341,341,402,662,428],
+[720,556,655,722,842,768,743,815,642,774,686,576],
+[832,695,796,990,1101,853,1167,1034,955,1157,1208,1208],
+[1357,1395,1521,1474,1652,1401,1728,1358,1280,1324,1224,1146],
+[1532,1292,1171,1221,1310,1159,1260,1286,1100,1268,1161,1091],
+[1154,1149,1141,1112,1346,1146,1104,1152,1039,1130,1101,915]
+]
+		
+//二维数组、动态创建svg(polygon属性多边形每个角的 x 和 y 坐标)、点击显示详细信息
+
+
+	
+var i ;
+var j ;
+var svgDom;
+svgDom = document.createElementNS('http://www.w3.org/2000/svg','svg');		
+svgDom.setAttribute('width','950');
+svgDom.setAttribute('height','240');
+var testdocument = document.getElementsByName("myChartsOne");//这一句获取的对象就不行  好像是一个列表
+
+document.getElementById("myChartsOne").appendChild(svgDom);
+//document.write(test2);
+//document.body.appendChild(svgDom);
+
+
+for( i = 0; i < 46; i++) {//循环有问题啊
+  for( j = 0; j < 12; j++) {
+  
+var polygonDom;
+var vertexY = j*18;
+var vertexX = i*20;
+var vertexY2 =j*18+18;
+var vertexX2 =i*20+20;
+var weight = 15;
+var sizejust =(1-colorarr[i][j]/1663)*7;
+//var colors = Math.round((1-colorarr[i][j]/1663)*255);
+var colors = Math.round((1-colorarr[i][j]/1663)*210);
+
+polygonDom = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+var polygonarr1 = '50,50 70,50 70,70 50,70';//示例坐标
+//var polygonarr = (vertexX+5).toString()+','+(vertexY+5).toString()+' '+vertexX2.toString()+','+(vertexY+5).toString()+' '+vertexX2.toString()+','+vertexY2.toString()+' '+(vertexX+5).toString()+','+vertexY2.toString();
+var polygonarr = (vertexX+sizejust).toString()+','+(vertexY+sizejust).toString()+' '+(vertexX2-sizejust).toString()+','+(vertexY+sizejust).toString()+' '+(vertexX2-sizejust).toString()+','+(vertexY2-sizejust).toString()+' '+(vertexX+sizejust).toString()+','+(vertexY2-sizejust).toString();
+
+polygonDom.setAttribute('points',polygonarr);
+//var colorset = 'fill:rgb(255,'+colors.toString()+', 0,0.7);';
+var colorset = 'fill:rgb('  +   colors.toString()  +  ','  +  colors.toString()  +  ', '  +  colors.toString()  +   ');';
+polygonDom.setAttribute('style',colorset);
+svgDom.appendChild(polygonDom);	
+
+}
+}	
+
+var LineDom = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+//var Linearr = '0,210 185,5 185,598 184,598';//示例坐标
+var Linearr = '0,235 950,235 950,236 0,236';//示例坐标
+LineDom.setAttribute('points',Linearr);//不可以用变量代替位置，  顺时针连接   取出该字符串？
+LineDom.setAttribute('style','fill:rgb(255, 255, 255);');
+svgDom.appendChild(LineDom);
+</script>	
+
+
+
+
+
+
+<!--图表模块2-->
+<div id="myCharts2" style="width: 29.5%;height:240px;z-index:2;position:absolute;margin-top:0px;margin-left:70.5%;background-image:url('back.png');">
+    <!--div id="listtitle" style="width: 6%;height:90px;z-index:3;position:absolute;margin-top:5px;margin-left:93%;background-image:url('listtitle.png');background-size:contain;"></div-->
+
+    <div class="ScrollDiv" style="overflow:scroll;width: 96%;height:240px;z-index:3;position:absolute;margin-top:5px;margin-left:5px">
+    <table class="dataintable" style="font-family:sans-serif;color:#8B8989;font-size: 10px">
+        <tbody>
+            <tr><td>Hai Zhu Direct,Hua Cheng Guang Chang #255,2018/04/19</td></tr>
+            <tr><td>Zhong Shan Road,Middle Area,2015/02/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Zhong Shan Road,Middle Area,2015/02/13</td></tr>
+            <tr><td>Zhong Shan Road,Middle Area,2015/02/13</td></tr>
+        </tbody>
+    </table>
+    </div>
+</div>
+
+
+ </div>
+<!--底层背景 end-->
+
+
+
+</body>
+</html>

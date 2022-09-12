@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+
+.links{  
+  fill: none;
+  stroke: #666;
+  stroke-opacity: 0.6;
+}
+
+
+
+circle {
+  <!--fill: #ccc;-->
+  stroke: #333;
+  stroke-width: 0px;
+}
+
+text {
+  color : #ccc;
+  font: 10px sans-serif;
+  pointer-events: none;
+  <!--text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;-->
+}
+
+</style>
+<body>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var nodes = 
+[
+        {"id": 0, "weight0": 0.5904607728513399}, 
+        {"id": 1, "weight0": 0.2514809116358371}, 
+        {"id": 2, "weight0": 0.42272561168665795}, 
+        {"id": 3, "weight0": 0.4248018282292247}, 
+        {"id": 4, "weight0": 0.4331236378640013}, 
+        {"id": 5, "weight0": 1.0000000000000000}, 
+        {"id": 6, "weight0": 0.7060400269601236}, 
+        {"id": 7, "weight0": 0.7445614488608681}, 
+        {"id": 8, "weight0": 0.6433745635943096}, 
+        {"id": 9, "weight0": 0.4498164124807961}, 
+        {"id": 10, "weight0": 0.40896391418590816}, 
+        {"id": 11, "weight0": 0.43908944659143806}, 
+        {"id": 12, "weight0": 0.3165036109060825}, 
+        {"id": 13, "weight0": 0.35445301019138664}, 
+        {"id": 14, "weight0": 0.4212821949314662}, 
+        {"id": 15, "weight0": 0.21794291761954662}
+    ];
+
+var links = [
+ {"source": 0, "target": 1, "weight": 0.5449703174199418}, 
+        {"source": 3, "target": 0, "weight": 0.6410314232964478}, 
+        {"source": 15, "target": 14, "weight": 0.37242924435979935}, 
+        {"source": 8, "target": 9, "weight": 0.6987302251673756},
+        //有向线段		
+        {"source": 3, "target": 4, "weight": 0.42279038219147447}, 
+        {"source": 7, "target": 8, "weight": 0.7498068665390001}, 
+        {"source": 11, "target": 8, "weight": 0.5173791895548496}, 
+        {"source": 0, "target": 2, "weight": 0.5959416081494845}, 
+        {"source": 9, "target": 11, "weight": 0.5683427072027417}, 
+        {"source": 2, "target": 3, "weight": 0.5052582604759845}, 
+        {"source": 9, "target": 8, "weight": 0.5420025325391058}, 
+		//有向线段	
+        {"source": 6, "target": 14, "weight": 0.6565380624169092}, 
+        {"source": 1, "target": 4, "weight": 0.3152371675484662}, 
+        {"source": 10, "target": 11, "weight": 0.47823341897680427}, 
+        {"source": 14, "target": 6, "weight": 0.6284447498117218}, 
+        {"source": 2, "target": 0, "weight": 0.6213725163080338}, 
+        {"source": 4, "target": 5, "weight": 0.7840146769028714}, 
+        {"source": 1, "target": 2, "weight": 0.4062160080892383}, 
+        {"source": 15, "target": 12, "weight": 0.26525111627915865}, 
+        {"source": 8, "target": 7, "weight": 0.7320275378790867}, 
+        {"source": 5, "target": 7, "weight": 0.8542564158627562}, 
+        {"source": 5, "target": 4, "weight": 0.6591092047781859}, 
+        {"source": 0, "target": 3, "weight": 0.5701638697442725}, 
+        {"source": 10, "target": 7, "weight": 0.4778753362370091}, 
+        {"source": 12, "target": 13, "weight": 0.5009296822625586}, 
+        {"source": 6, "target": 5, "weight": 0.8029394835530925}, 
+        {"source": 13, "target": 15, "weight": 0.45985037926308703}, 
+        {"source": 11, "target": 10, "weight": 0.6472391129000641}, 
+        {"source": 13, "target": 12, "weight": 0.3600893563941189}, 
+        {"source": 14, "target": 13, "weight": 0.46410748697310356}, 
+        {"source": 6, "target": 12, "weight": 0.4675987629145454}, 
+        {"source": 5, "target": 6, "weight": 1.0}, 
+        {"source": 10, "target": 9, "weight": 0.456138497546487}, 
+        {"source": 7, "target": 5, "weight": 0.9355435169156326}
+    ];
+
+
+// Compute the distinct nodes from the links.
+links.forEach(function(link) {
+  link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
+  link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+});
+
+//画布大小
+var width = 1000,
+    height = 1000;
+
+var force = d3.layout.force()  //weight是force的默认属性
+	.nodes(nodes)
+    .links(links)
+    .size([width, height])
+    .linkDistance(100)
+    .charge(-400)  //力控制
+    .on("tick", tick)  //tick
+    .start();
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+
+//箭头
+var defs = svg.append("defs");
+var arrowMarker = defs.selectAll("marker")
+	.data(links)
+    .enter().append("marker")
+    .attr("id", function(d) { return d.weight; })
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 2.2)
+    .attr("markerHeight", 2.2)
+	.attr("fill", "#999999")
+	.attr("stroke-width",2)
+    .attr("orient", "auto")
+     .append("path")
+    .attr("d", "M0,-5L10,0L0,5");
+	
+
+var path = svg.append("g").selectAll("path")
+    .data(force.links())
+    .enter().append("path")
+    .attr("class", "links") 
+    .attr("stroke-width", function(d) { 
+     return d.weight*5; })//属性函数
+ 	.attr("d",
+	 function (d) {
+	 console.log(d.weight);
+  var dx = d.target.x - d.source.x,   //似乎对path属性无效
+      dy = d.target.y - d.source.y,
+      dr = Math.sqrt(dx * dx + dy * dy);
+	   gamma = Math.atan2(dy, dx),
+	   sx = Math.max(d.source.weight, Math.min(width - d.source.weight,  d.source.x + (Math.cos(gamma) * d.source.weight)  )),
+       sy = Math.max(d.source.weight, Math.min(height - d.source.weight,  d.source.y + (Math.sin(gamma) * d.source.weight)  )),
+       tx = Math.max(d.target.weight, Math.min(width - d.target.weight,  d.target.x - (Math.cos(gamma) * (d.target.weight*2 + 4))  )), 
+       ty = Math.max(d.target.weight, Math.min(height - d.target.weight,  d.target.y - (Math.sin(gamma) * (d.target.weight*2 + 4))  ));
+      // If you like a tighter curve, you may recalculate dx dy dr:
+  //return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+ return "M" + sx + "," + sy + "A" + dr + "," + dr + " 0 0,1 " + tx + "," + ty;
+  }
+	)
+	.attr("marker-end", function(d) { return "url(#" + d.weight + ")"; });//这一句 与箭头有关
+	 //.attr("stroke-width", function(d) { return Math.sqrt(d.value); });属性函数
+
+
+var circle = svg.append("g").selectAll("circle")  //nodes属性
+    .data(force.nodes())
+    .enter().append("circle")
+    .attr("r", function(d) { 
+	return Math.sqrt(d.weight0)*25; })  //开根号处理 使极差变小
+	.style("fill",function(d){
+	console.log(d.weight0);
+	return "rgb(255,"+(255-100*d.weight0)+","+(255-175*d.weight0)+")";})    //控制颜色渐变色阈 反向映射
+    .call(force.drag);
+
+var text = svg.append("g").selectAll("text")   //text
+    .data(force.nodes())
+   .enter().append("text")
+    .attr("x", -2)  //可以使用 .XXem 控制方式
+	.attr("y", 2)
+    .text(function(d) { return d.id; });
+
+// Use elliptical arc path segments to doubly-encode directionality.
+function tick() {
+  path.attr("d", linkArc);
+  circle.attr("transform", transform);
+  text.attr("transform", transform);
+}
+
+function linkArc(d) {
+  var dx = d.target.x - d.source.x,  //控制箭头位置，避免遮挡
+      dy = d.target.y - d.source.y,
+      dr = Math.sqrt(dx * dx + dy * dy);
+	  gamma = Math.atan2(dy, dx),
+	  sx = Math.max(d.source.weight, Math.min(width - d.source.weight,  d.source.x + (Math.cos(gamma) * d.source.weight)  )),
+      sy = Math.max(d.source.weight, Math.min(height - d.source.weight,  d.source.y + (Math.sin(gamma) * d.source.weight)  )),
+      tx = Math.max(d.target.weight, Math.min(width - d.target.weight,  d.target.x - (Math.cos(gamma) * (d.target.weight*3 + 1))  )), 
+      ty = Math.max(d.target.weight, Math.min(height - d.target.weight,  d.target.y - (Math.sin(gamma) * (d.target.weight*3 + 1))  ));
+      //If you like a tighter curve, you may recalculate dx dy dr:
+      //return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+ return "M" + sx + "," + sy + "A" + dr + "," + dr + " 0 0,1 " + tx + "," + ty;
+  }
+
+function transform(d) {
+  return "translate(" + d.x + "," + d.y + ")";
+}
+
+</script>

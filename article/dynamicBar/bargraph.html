@@ -1,0 +1,51 @@
+<!--
+@author Jannchie
+@email jannchie@gmail.com
+@create date 2018-07-18 08:42:38
+@modify date 2018-07-22 09:51:00
+@Optimized and used for data analysis 2019 @zhangyueyao.tongji.edu.cn
+@desc A data visualization project based on d3.js.
+-->
+
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <title>动态排名数据可视化</title>
+</head>
+
+<body>
+    <center>
+        <input type="file" id="inputfile" name="fileContent">
+        <svg width="1800" height="1000"></svg>
+        <script src="config.js"></script>
+        <script src="main.js"></script>
+        <link rel="stylesheet" href="color.css">
+    </center>
+
+
+    <div style="position:relative;top: 10%;text-align:center;">
+        <p><small>
+            示例csv文件数据格式</br>
+            name	type	value	date</br>
+            广东省	华南	63.33	2020年
+     </small>
+       </p>
+
+        <p>
+            <small>
+                思考我将何时使用这样的动态（排名型）barGraph？：当有多个对象的时序数据，这些数据能够在同一尺度（坐标轴）上进行比较，并且每一刻的排名都有意义，最后一刻的排名有其重要意义，比如有“落脚点”的意义、关注当前（正好是现在、此刻）时</span>
+            </small>
+        </p>
+
+        <p><small>&copy; 可视化源代码： ver1.1 By Jannchie 2018</span> </small></p>
+        <p><small>&copy; 优化并用于分析： By Zhangyueyao  2019</span> </small></p>
+
+    </div>
+</body>
+
+</html>

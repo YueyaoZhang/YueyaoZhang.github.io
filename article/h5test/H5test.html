@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>我的生活</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<script type="text/javascript" src="js/heat_map.js"></script>
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script> 
+
+    <link rel="stylesheet" href="//g.alicdn.com/msui/sm/0.6.2/css/sm.min.css">
+    <link rel="stylesheet" href="//g.alicdn.com/msui/sm/0.6.2/css/sm-extend.min.css">
+
+  </head>
+  <body>
+    <!--div class="page-group">
+        <div class="page page-current">
+		<p>你的html代码</p>
+        </div>
+    </div-->
+	
+	<!--div class="page">
+  <header class="bar bar-nav">
+    <a class="button button-link button-nav pull-left" href="/demos/card" data-transition='slide-out'>
+      <span class="icon icon-left"></span>
+      返回
+    </a>
+    <h1 class="title">我的生活</h1>
+  </header>
+  <nav class="bar bar-tab">
+    <a class="tab-item active" href="#">
+      <span class="icon icon-home"></span>
+      <span class="tab-label">首页</span>
+    </a>
+    <a class="tab-item" href="#">
+      <span class="icon icon-me"></span>
+      <span class="tab-label">我</span>
+    </a>
+    <a class="tab-item" href="#">
+      <span class="icon icon-star"></span>
+      <span class="tab-label">收藏</span>
+    </a>
+    <a class="tab-item" href="#">
+      <span class="icon icon-settings"></span>
+      <span class="tab-label">设置</span>
+    </a>
+  </nav>
+  <div class="content">
+  <div class="page-index">
+  <div class="card">
+    <div style="background-image:url(//gqianniu.alicdn.com/bao/uploaded/i4//tfscom/i3/TB10LfcHFXXXXXKXpXXXXXXXXXX_!!0-item_pic.jpg_250.3.0q60.jpg)" valign="bottom" class="card-header color-white no-border">旅途的山</div>
+    <div class="card-content">
+      <div class="card-content-inner">
+        <p class="color-gray">发表于 2015/01/15</p>
+        <p>此处是内容...</p>
+      </div>
+    </div>
+    <div class="card-footer">
+      <a href="#" class="link">赞</a>
+      <a href="#" class="link">更多</a>
+    </div>
+  </div>
+  </div>
+   </div> 
+  
+  <div id="Svgcard" style="width: 100%;height:50%;z-index:10;position:absolute;margin-top:100px;margin-left:0px;background-color:rgba(255,150,255,0.5);"></div>
+   </div-->
+ <script>	
+//声明二维数组
+		
+var colorarr = [
+[39,55,69,79,72,61,68,42,42,55,41,26],
+[44,43,50,57,56,24,24,47,37,26,39,23],
+[37,29,38,22,74,34,61,49,35,36,29,50],
+[44,37,46,44,47,27,33,37,37,36,36,48],
+[45,40,62,46,51,52,33,31,47,53,65,52],
+[32,68,74,57,82,49,43,67,71,96,47,53],
+[71,71,59,78,107,86,80,72,73,83,81,60],
+[84,68,114,63,81,145,133,136,97,165,76,152],
+[162,149,125,112,124,99,77,101,127,128,126,194],
+[250,233,259,212,361,250,160,210,177,222,153,171],
+[220,181,254,298,198,273,224,183,216,240,207,168],
+[209,214,207,208,223,175,196,265,187,234,200,268],
+[232,180,277,251,236,164,216,224,173,251,137,203],
+[292,198,232,221,296,251,218,225,236,259,233,209],
+[278,286,374,370,299,249,345,331,294,233,239,197],
+[234,184,224,156,422,296,263,266,205,217,231,217],
+[224,200,300,249,248,344,266,236,216,199,166,211],
+[239,269,227,306,246,295,297,289,289,250,314,162],
+[288,324,358,276,326,335,340,260,238,326,319,330],
+[324,378,320,342,359,272,323,366,499,472,377,291],
+[286,240,398,339,413,394,371,339,294,323,274,217],
+[398,336,275,327,349,350,514,426,406,528,434,339],
+[366,335,514,367,459,307,389,390,456,508,532,450],
+[329,318,419,366,315,243,257,212,245,240,219,295],
+[217,254,270,169,323,289,305,247,300,315,169,223],
+[298,233,233,249,288,190,276,234,287,305,212,251],
+[239,266,256,234,189,308,337,349,257,279,218,268],
+[81,95,63,66,54,41,105,125,65,114,90,34],
+[63,61,184,88,94,183,158,113,79,165,142,64],
+[186,113,95,98,130,167,157,120,227,172,182,167],
+[164,136,169,116,98,80,78,568,141,99,135,123],
+[136,145,83,106,185,108,93,142,75,94,104,60],
+[195,114,195,83,157,62,117,35,74,59,107,65],
+[79,44,80,95,93,156,113,121,105,118,73,84],
+[176,69,198,209,231,144,268,260,119,145,74,115],
+[282,434,120,405,215,120,266,238,158,185,163,164],
+[174,234,228,217,171,588,223,200,165,332,533,174],
+[329,155,321,505,499,510,553,461,268,328,431,443],
+[403,339,412,416,417,432,467,401,341,419,337,336],
+[276,411,368,359,462,376,410,409,527,372,467,385],
+[402,376,447,436,450,399,387,341,341,402,662,428],
+[720,556,655,722,842,768,743,815,642,774,686,576],
+[832,695,796,990,1101,853,1167,1034,955,1157,1208,1208],
+[1357,1395,1521,1474,1652,1401,1728,1358,1280,1324,1224,1146],
+[1532,1292,1171,1221,1310,1159,1260,1286,1100,1268,1161,1091],
+[1154,1149,1141,1112,1346,1146,1104,1152,1039,1130,1101,915]
+]
+		
+//二维数组、动态创建svg(polygon属性多边形每个角的 x 和 y 坐标)、点击显示详细信息
+
+
+	
+var i ;
+var j ;
+var svgDom;
+svgDom = document.createElementNS('http://www.w3.org/2000/svg','svg');		
+svgDom.setAttribute('width','600');
+svgDom.setAttribute('height','600');
+document.body.appendChild(svgDom);
+
+
+for( i = 0; i < 46; i++) {//循环有问题啊
+ console.log("打印");
+  for( j = 0; j < 12; j++) {
+  
+var polygonDom;
+var vertexX = j*13;
+var vertexY = i*13;
+var vertexX2 =j*13+13;
+var vertexY2 =i*13+13;
+var weight = 13;
+var sizejust =(1-colorarr[i][j]/1663)*3.5;
+var colors = Math.round((1-colorarr[i][j]/1663)*255);
+
+//必须要用ij来设置位置啊  颜色想用渐变色   i决定y  j决定x      横轴X
+//对数比例 ?  
+//if(colorarr[i][j]>=1000 )
+polygonDom = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+var polygonarr1 = '50,50 70,50 70,70 50,70';//示例坐标
+ //设置一定的间隔
+var polygonarr = (vertexX+1).toString()+','+(vertexY+1).toString()+' '+vertexX2.toString()+','+(vertexY+1).toString()+' '+vertexX2.toString()+','+vertexY2.toString()+' '+(vertexX+1).toString()+','+vertexY2.toString();
+//var polygonarr = (vertexX+sizejust).toString()+','+(vertexY+sizejust).toString()+' '+(vertexX2-sizejust).toString()+','+(vertexY+sizejust).toString()+' '+(vertexX2-sizejust).toString()+','+(vertexY2-sizejust).toString()+' '+(vertexX+sizejust).toString()+','+(vertexY2-sizejust).toString();
+//document.write(colors);
+polygonDom.setAttribute('points',polygonarr);//不可以用变量代替位置，  顺时针连接   取出该字符串？
+//是否存在色值连续的色带  十六进制加一即可？（255，X，0）  转16进制    0~m~1652  (1-m/1652)*255  远离红色的程度
+//polygonDom.setAttribute('style','fill:rgb(255, 0, 0);strock:#ccc;stroke-width:1;');
+var colorset = 'fill:rgb(255,'+colors.toString()+', 0);';
+polygonDom.setAttribute('style',colorset);
+svgDom.appendChild(polygonDom);	
+
+  
+  
+
+
+}
+///document.write("/br");
+}
+
+
+
+var LineDom = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+var Linearr = '184,5 185,5 185,598 184,598';//示例坐标
+LineDom.setAttribute('points',Linearr);//不可以用变量代替位置，  顺时针连接   取出该字符串？
+LineDom.setAttribute('style','fill:rgb(255, 180, 0);');
+svgDom.appendChild(LineDom);	
+</script>	
+   
+  </div>
+  
+  
+
+  
+    <!-- 这里是页面内容区 -->
+
+
+
+
+
+    <script type='text/javascript' src='//g.alicdn.com/sj/lib/zepto/zepto.min.js' charset='utf-8'></script>
+    <script type='text/javascript' src='//g.alicdn.com/msui/sm/0.6.2/js/sm.min.js' charset='utf-8'></script>
+    <script type='text/javascript' src='//g.alicdn.com/msui/sm/0.6.2/js/sm-extend.min.js' charset='utf-8'></script>
+
+  </body>
+</html>

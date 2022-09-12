@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.node {
+  cursor: pointer;
+}
+
+.node:hover {
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+
+.node--leaf {
+  fill: white;
+}
+
+.label {
+  font: 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-anchor: middle;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
+}
+
+.label,
+.node--root,
+.node--leaf {
+  pointer-events: none;
+}
+
+</style>
+<svg width="1000" height="450" ></svg>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>    
+<script src="http://d3js.org/d3.v4.min.js" charset="utf-8"></script> 
+<script src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>   
+<!--script>
+var width = 800;
+var height = 800;
+	
+var contain = d3.select("body");
+
+var svg = contain.select("svg")
+    margin = 20,
+    diameter = +svg.attr("width"),
+    g = svg.append("g").attr("transform", "translate(" + 50 + "," + 50 + ")");  //控制定位
+	
+//var g2 = svg.append("g2").attr("transform", "translate(" + 500 + "," + diameter / 4 + ")");
+
+var color = d3.scaleLinear()
+    .domain([-1, 5])
+    .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
+    .interpolate(d3.interpolateHcl);
+
+var pack = d3.pack()
+    .size([50, 50])   //整体控制大小
+    .padding(2);
+	
+/*var pack2 = d3.pack()
+    .size([150, 150])
+    .padding(2);  */
+
+d3.json("flare.json", function(error, root) {
+  if (error) throw error;
+
+  root = d3.hierarchy(root)
+      .sum(function(d) { return d.size; })
+      .sort(function(a, b) { return b.value - a.value; });
+
+  var focus = root,
+      nodes = pack(root).descendants(),
+      view;
+
+  var circle = g.selectAll("circle")
+    .data(nodes)
+    .enter().append("circle")
+      .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
+      .style("fill", function(d) { return d.children ? color(d.depth) : null; })
+      .on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); });
+
+  var text = g.selectAll("text")
+    .data(nodes)
+    .enter().append("text")
+      .attr("class", "label")
+      .style("fill-opacity", function(d) { return d.parent === root ? 1 : 0; })
+      .style("display", function(d) { return d.parent === root ? "inline" : "none"; })
+      .text(function(d) { return d.data.name; });
+
+  var node = g.selectAll("circle,text");
+
+  svg.style("background", "white")   //背景色
+      .on("click", function() { zoom(root); });  //点击事件
+
+  zoomTo([root.x, root.y, root.r * 2 + margin]);
+
+  function zoom(d) {
+    var focus0 = focus; focus = d;
+
+    var transition = d3.transition()
+        .duration(d3.event.altKey ? 7500 : 750)
+        .tween("zoom", function(d) {
+          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+          return function(t) { zoomTo(i(t)); };
+        });
+
+    transition.selectAll("text")
+      .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
+        .style("fill-opacity", function(d) { return d.parent === focus ? 1 : 0; })
+        .on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
+        .on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+  }
+
+  function zoomTo(v) {
+    var k = diameter / v[2]; view = v;
+    node.attr("transform", function(d) { return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")"; });
+    circle.attr("r", function(d) { return d.r * k; });
+  }
+});
+
+</script-->
+
+<script>
+var width = 1000;
+var height = 800;
+var placearrayX = [30,60,60,80,130,120,110,140,150,170];
+var placearrayY = [130,100,160,70,130,30,210,180,70,90];
+var currentscale = 0;
+var r =1;
+//该例使用V4版本，同时使用
+</script>
+
+<script>
+var contain = d3.select("body");
+var svg = contain.select("svg");
+//整体的缩放事件--------------------------------------------------------------
+		var zoom = d3.behavior.zoom()
+					.scaleExtent([1, 10])
+					.on("zoom", zoomed); //想同时触发两个事件
+       
+		function zoomed() {
+		      //点击事件
+			
+			console.log(d3.event.scale);//监听当前scale变化，传递给packzoom，重绘，清空图形
+			d3.select(this).attr("transform", 
+				"translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+			//listenzoom(d3.event.scale);
+			currentscale = d3.event.scale;
+			//没有写缩小事件
+			for(var i=0;i<10;i++){     //写在函数里就不会覆盖前面绘制的图形,
+	        CreatePack(placearrayX[i]*3,placearrayY[i]*2,r*currentscale);
+	         }
+		}
+//整体的缩放事件--------------------------------------------------------------
+
+svg.call(zoom);
+var margin = 20;
+var diameter = +svg.attr("width");
+
+
+//绘制pack包----------------------------------------------------------------
+for(var i=0;i<10;i++){     //写在函数里就不会覆盖前面绘制的图形
+	CreatePack(placearrayX[i]*3,placearrayY[i]*2,1);
+	}
+	
+function CreatePack(x,y,r) {
+//for(var i=0;i<10;i++){   //for 循环  产生了覆盖
+console.log(placearrayX[i]);
+var g = svg.append("g").attr("transform", "translate(" + x + "," + y + ")");  //控制定位
+	
+var color = d3.scale.linear()
+    .domain([-1, 5])
+    .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
+    .interpolate(d3.interpolateHcl);
+
+var pack = d3.pack()
+    .size([r, r])   //整体控制大小
+    .padding(2);
+	
+d3.json("flare.json", function(error, root) {
+  if (error) throw error;
+
+  root = d3.hierarchy(root)
+      .sum(function(d) { return d.size; })
+      .sort(function(a, b) { return b.value - a.value; });
+
+  var focus = root,
+      nodes = pack(root).descendants(),
+      view;
+
+  var circle = g.selectAll("circle")
+    .data(nodes)
+    .enter().append("circle")
+      .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
+      .style("fill", function(d) { return d.children ? color(d.depth) : null; })
+      .on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); });
+	/*
+	//扇形区域  
+	
+	var arc = d3.svg.arc()
+			.startAngle(0)
+			.endAngle(30)
+			.innerRadius(0)
+			.outerRadius(50);
+	
+	var arcs = svg.selectAll("g")
+				  .data(nodes)
+				  .enter().append("g");
+	
+	arcs.append("path")
+		.attr("display", function(d) { return d.depth ? null : "none"; }) // hide inner ring
+		.attr("d", arc)
+		.style("stroke", "#fff");
+		
+	*/
+
+ /* var text = g.selectAll("text")
+    .data(nodes)
+    .enter().append("text")
+      .attr("class", "label")
+      .style("fill-opacity", function(d) { return d.parent === root ? 1 : 0; })
+      .style("display", function(d) { return d.parent === root ? "inline" : "none"; })
+      .text(function(d) { return d.data.name; });
+	  */
+   //绘制曲线
+var data = [0, 12, 3, 4, 5, 6, 9];//可以自己插值得出
+var data2 = [{"x":1,"y":5},  {"x":20,"y":30}];//可以自己插值得出
+var scale_x = d3.scale.linear()//把曲线沿x轴按比例放大
+//.domain([0, Math.abs(placearrayX[i]-placearrayX[i+1])])
+.domain([0, 6])
+.range([0, 2]);
+var scale_y = d3.scale.linear()//把曲线沿y轴按比例放大
+.domain([0, 6])
+.range([0, 2]);
+
+
+var line_generator = d3.svg.line()//d3中绘制曲线的函数
+.x(function(d, i){return scale_x(i);})//曲线中x的值
+.y(function(d){return scale_y(d);})//曲线中y的值
+.interpolate("cardinal")//把曲线设置光滑
+
+d3.select("g")
+.append("path")
+.attr("d", line_generator(data));
+/*
+var link= svg.selectAll("path")
+    .data(data2)
+  .enter().append("path")
+    .attr("d",d3.svg.diagonal())
+    .attr("class", ".link")
+    .attr("stroke", "black")
+    .attr("stroke-width", "2px")
+    .attr("shape-rendering", "auto")
+    .attr("fill", "none");  
+	*/
+	
+console.log(data2[1].y);
+
+	  
+	  
+  var node = g.selectAll("circle,text");
+
+  svg.style("background", "white")   //背景色
+      .on("click", function() { zoom(root); });  //点击事件
+	   //.on("zoom", zoomed);  //为pack添加整体放缩事件
+
+  zoomTo([root.x, root.y, root.r * 2 + margin]);
+
+ 
+  function zoom(d) {
+    var focus0 = focus; focus = d;
+
+    var transition = d3.transition()
+        .duration(d3.event.altKey ? 7500 : 750)
+        .tween("zoom", function(d) {
+          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+		  //zoomed;
+          return function(t) { zoomTo(i(t)); };
+        });
+
+    transition.selectAll("text")
+      .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
+        .style("fill-opacity", function(d) { return d.parent === focus ? 1 : 0; })
+        .on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
+        .on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+  }
+
+  function zoomTo(v) {
+    var k = diameter / v[2]; view = v;
+    node.attr("transform", function(d) { return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")"; });
+    circle.attr("r", function(d) { return d.r * k; });
+  }
+});
+
+} //函数
+//}  //for 循环
+
+
+//绘制贝塞尔曲线开始---------------------------------------------------------------------------
+//var data3 = [ {name: "p1", children: [{name: "c1"}, {name: "c2"}, {name: "c3"}, {name: "c4"}]}];
+//数据结构：node-children
+ 
+var data4 = [ 
+{name: "Decha",X:90,Y:260,
+ children: [ 
+ {children: [ ]}
+ ]},
+{name: "Tansanee",X:180,Y:320,
+ children: [ 
+ {children: [ ]}
+ ]},
+{
+name: "Sakda",X:330,Y:420,
+children: 
+[
+{name: "Somachair",X:180,Y:200,
+children: [ ]}, 
+{name: "Achara",X:240,Y:140,
+children: [ ]}
+]
+},
+{name: "Kannika",X:420,Y:360,
+children: 
+[
+{name: "Chai",X:390,Y:260,
+children: 
+[
+{name: "Kohsoom",X:450,Y:140}, 
+{name: "Boonsri",X:360,Y:60}
+]
+}, 
+{name: "Busakrahan",X:510,Y:180,
+children: [ ]}
+]
+
+}
+]
+
+var data3 = [ 
+{name: "Decha",
+ children: [ 
+ {children: [ ]}
+ ]},
+{name: "Tansanee",
+ children: [ 
+ {children: [ ]}
+ ]},
+{
+name: "Sakda",
+children: 
+[
+{name: "Somachair",
+children: [ ]}, 
+{name: "Achara",
+children: [ ]}
+]
+},
+{name: "Kannika",
+children: 
+[
+{name: "Chai",
+children: 
+[
+{name: "Kohsoom"}, 
+{name: "Boonsri"}
+]
+}, 
+{name: "Busakrahan",
+children: [ ]}
+]
+
+}
+]
+
+   
+var radius = 10, gap = 50;
+var nodes1 = [];
+var links1 = [];
+//data3 = [ {name: "p1",x:"50",y:"50", children: [{name: "c1",x:"70",y:"70"},{name: "c2",x:"90",y:"100"}]}];
+data3.forEach(function(d, i) {//构造点和线的对象
+    d.x = data4[i].X;
+    d.y = data4[i].Y;
+    nodes1.push(d);
+	
+    d.children.forEach(function(c, j) {   //去data4找坐标
+        c.x =  data4[i].children[j].X;
+        c.y =  data4[i].children[j].Y;
+       
+		if(data4[i].children[j].X >=1){
+		 nodes1.push(c);
+		//links1.push({source: data3[i], target: data3[i].children[j]});   //target不是数字
+		links1.push({source: d, target: c});   //target不是数组
+		}
+			c.children.forEach(function(e, k) {
+			e.x =  data4[i].children[j].children[k].X;
+			e.y =  data4[i].children[j].children[k].Y;
+			
+			if(data4[i].children[j].children[k].X >=1){ //删除undefined路线和nodes
+			nodes1.push(e);
+			links1.push({source: c, target:e});
+			}
+			//links1.push({source: data3[i].children[j], target:data3[i].children[j].children[k]});
+		 console.log(e);
+		
+    })
+
+		
+    })
+	
+	
+})
+console.log(links1);
+console.log(nodes1);
+
+
+  
+var diagonal = d3.svg.diagonal()  //对角线生成器
+        .projection(function(d) { 
+		//return [d.x, d.y]; 
+		return [d.x, d.y]; 
+		});
+		
+    var node = svg.selectAll(".node")
+        .data(nodes1)
+        .enter()
+        .append("g")
+        .attr("class","node")
+        .attr("transform",function(d){return "translate("+ d.x+","+ d.y+")"})
+		
+		 node.append("circle")
+        .attr("r",4.5)
+
+var tree = d3.layout.tree()
+    .size([width,height])
+    var links2 = tree.links(nodes1);   //用树的方法绘制？
+var link = svg.selectAll(".link") //绘制连线
+        .data(links2)
+        .enter().append("path")
+        .attr("d", diagonal)   //难道读进去的是字符串吗-确实
+		.attr("class", "link")
+		.attr("stroke", "black")
+		.attr("stroke-width", "1px")
+		.attr("shape-rendering", "auto")
+		.attr("fill", "none");   
+
+//绘制贝塞尔曲线结束----------------------------------------------------------------------------
+
+
+</script>

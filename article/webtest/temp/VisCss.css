@@ -1,0 +1,11 @@
+
+
+.toptitle{
+	position:fixed; 
+	top:10px;left:10px; 
+	width:416px; height:65px; 
+	z-index:2;
+	font-family: sans-serif;
+	color:#707070;
+	font-size: 25px
+}
