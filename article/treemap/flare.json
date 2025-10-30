@@ -1,0 +1,34 @@
+{
+    "name": "flare",
+    "deal": "2",
+    "children": [{
+            "name": "analytics" ,            
+            "children": [{
+                "name": "cluster",
+                "children": [{
+                     "name": "AgglomerativeCluster",
+                     "size": 3938
+                }, {
+                    "name": "CommunityStructure",
+                    "size": 3812
+                }, {
+                    "name": "HierarchicalCluster",
+                    "size": 6714
+                }, {
+                    "name": "MergeEdge",
+                    "size": 743
+                }]
+            }]
+        }, {
+            "name": "ISchedulable",
+            "deal": "2",
+            "size": 1041
+                   }, {
+            "name": "Parallel",
+            "size": 5176
+        }, {
+            "name": "Pause",
+            "size": 449
+        }
+    ]
+}

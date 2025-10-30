@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" name="ArcGIS">
+    <output-path>$PROJECT_DIR$/out/artifacts/ArcGIS</output-path>
+    <root id="root" />
+  </artifact>
+</component>

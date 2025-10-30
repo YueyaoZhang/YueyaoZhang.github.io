@@ -1,22 +1,206 @@
----
-layout: default
----
-<div id="container">
-<div id="grid" data-columns class="cols">
-    {% for post in site.posts %}
-    <div class="box" style="background-color:#{{post.color}}">
-       {% if post.img %}
-          <img class="feat-image" src={{ "/images/" | prepend: site.baseurl | append: post.img }} alt="{{post.title}}">
-       {% endif %}
-          <div class="container">
-            <h4>{{post.title}}</h4>
-            <p>{{post.description}}</p>
-             <div class="action">{{ post.date | date: '%B %d, %Y' }}<a href="{{post.url | prepend: site.baseurl}}"><i class="fa fa-arrow-right" aria-hidden="true"></i></a></div> 
-        </div>   
-    </div>
-   {% endfor %}
 
-</div>
-</div>
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+	<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Zhangyueyao</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Free HTML5 Website Template by FreeHTML5.co" />
+	<meta name="keywords" content="free html5, free template, free bootstrap, free website template, html5, css3, mobile first, responsive" />
+	<meta name="author" content="FreeHTML5.co" />
 
-<script src="{{site.baseurl}}/js/salvattore.min.js"></script>
+
+
+
+
+	<!-- Place icon/cat.png and apple-touch-icon.png in the root directory -->
+	<link rel="shortcut icon" href="icon/cat.png">
+
+	<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700" rel="stylesheet">
+	
+	<!-- Animate.css -->
+	<link rel="stylesheet" href="css/animate.css">
+	<!-- Icomoon Icon Fonts-->
+	<link rel="stylesheet" href="css/icomoon.css">
+	<!-- Bootstrap  -->
+	<link rel="stylesheet" href="css/bootstrap.css">
+	<!-- Flexslider  -->
+	<link rel="stylesheet" href="css/flexslider.css">
+	<!-- Theme style  -->
+	<link rel="stylesheet" href="css/style.css">
+
+	<!-- Modernizr JS -->
+	<script src="js/modernizr-2.6.2.min.js"></script>
+	<!-- FOR IE9 below -->
+	<!--[if lt IE 9]>
+	<script src="js/respond.min.js"></script>
+	<![endif]-->
+
+	</head>
+	<body>
+		<div id="fh5co-page">
+			<a href="#" class="js-fh5co-nav-toggle fh5co-nav-toggle"><i></i></a>
+			<aside id="fh5co-aside" role="complementary" class="border js-fullheight">
+
+				<h1 id="fh5co-logo"><a href="index.html">张月瑶</a></h1>
+				<nav id="fh5co-main-menu" role="navigation">
+					<ul>
+						<li><a href="index.html">我</a></li>
+						<li><a href="study.html">学术项目</a></li>
+						<li><a href="data.html">数据项目</a></li>
+						<!--<li><a href="up.html">UP主</a></li>-->
+						<li><a href="photo.html">摄影</a></li>
+						<li><a href="other.html">其他</a></li>
+						<li><a href="notes.html">随笔</a></li>
+					</ul>
+				</nav>
+
+				<div class="fh5co-footer">
+					<p><small>&copy; 2022年.个人网站尚在建设中. All Rights Reserved.</span> <span>Frame Designed by <a href="http://freehtml5.co/" target="_blank">FreeHTML5.co</a> </span> </small></p>
+
+				</div>
+
+			</aside>
+
+			<div id="fh5co-main">
+				<aside id="fh5co-hero" class="js-fullheight">
+					<div class="flexslider js-fullheight">
+						<ul class="slides">
+							<li style="background-image: url(images/img_bg_1.jpg);">
+								<div class="overlay"></div>
+								<div class="container-fluid">
+									<div class="row">
+										<div class="col-md-8 col-md-offset-2 text-center js-fullheight slider-text">
+											<div class="slider-text-inner">
+												<h1 id="current_time">恭喜<strong></strong></h1>
+												<script type="text/javascript">
+
+													const currentDate = new Date();
+													const year = currentDate.getFullYear();
+													const month = currentDate.getMonth() + 1; // 月份从0开始，需要加1
+													const day = currentDate.getDate();
+                                                    var currentDate_simple = year + "年" + month + "月" + day + "日";
+													// 或者使用模板字符串
+													console.log(`${year}-${month}-${day}`);
+                                                    document.getElementById("current_time").textContent = "恭喜我，已经活到了" + currentDate_simple + "!";
+												</script>
+
+												<h2>创意，最大的敌人就是自我怀疑——Sylvia Plath</h2>
+											</div>
+										</div>
+									</div>
+								</div>
+							</li>
+							<li style="background-image: url(images/img_bg_2.jpg);">
+								<div class="overlay"></div>
+								<div class="container-fluid">
+									<div class="row">
+										<div class="col-md-8 col-md-offset-2 text-center js-fullheight slider-text">
+											<div class="slider-text-inner">
+												<h1>自来熟！ <strong></strong> 希望我们可以成为朋友</h1>
+												<h2>热爱有凝聚力的集体，总是乐在其中</h2>
+											</div>
+										</div>
+									</div>
+								</div>
+							</li>
+							<li style="background-image: url(images/img_bg_3.jpg);">
+								<div class="overlay"></div>
+								<div class="container-fluid">
+									<div class="row">
+										<div class="col-md-8 col-md-offset-2 text-center js-fullheight slider-text">
+											<div class="slider-text-inner">
+												<h1>理想，逆境，伙伴！ <strong></strong> 自我情绪的调节能力</h1>
+												<h2>驱动前行的力量，它们同等重要</h2>
+											</div>
+										</div>
+									</div>
+								</div>
+							</li>
+						</ul>
+					</div>
+				</aside>
+
+
+
+				<div class="fh5co-narrow-content">
+					<h2 class="fh5co-heading animate-box" data-animate-effect="fadeInLeft">创意集群</h2>
+					<div class="row row-bottom-padded-md">
+						<div class="col-md-3 col-sm-6 col-padding animate-box" data-animate-effect="fadeInLeft">
+							<div class="blog-entry">
+								<a href="#" class="blog-img"><img src="images/digitalsmell.jpg" class="img-responsive" alt="Free HTML5 Bootstrap Template by FreeHTML5.co"></a>
+								<div class="desc">
+									<h3><a href="#">点子集</a></h3>
+									<span><small>创意 </small> / <small> notes </small> / <small> <i class="icon-comment"></i> 2022</small></span>
+									<p>记录所有稀奇古怪的产品点子，还没汇总上来（</p>
+									<a href="#" class="lead">Read More <i class="icon-arrow-right3"></i></a>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-3 col-sm-6 col-padding animate-box" data-animate-effect="fadeInLeft">
+							<div class="blog-entry">
+								<a href="#" class="blog-img"><img src="images/ideas2.jpg" class="img-responsive" alt="Free HTML5 Bootstrap Template by FreeHTML5.co"></a>
+								<div class="desc">
+									<h3><a href="#">关于可视化的构想</a></h3>
+									<span><small>by Admin </small> / <small> Web Design </small> / <small> <i class="icon-comment"></i> 2022</small></span>
+									<p>2023</p>
+									<a href="#" class="lead">Read More <i class="icon-arrow-right3"></i></a>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-3 col-sm-6 col-padding animate-box" data-animate-effect="fadeInLeft">
+							<div class="blog-entry">
+								<a href="#" class="blog-img"><img src="images/ideas3.jpg" class="img-responsive" alt="Free HTML5 Bootstrap Template by FreeHTML5.co"></a>
+								<div class="desc">
+									<h3><a href="#">服装传递信息的交互产品</a></h3>
+									<span><small>by Admin </small> / <small> Web Design </small> / <small> <i class="icon-comment"></i> 2022</small></span>
+									<p>这听起来非常奇怪</p>
+									<a href="#" class="lead">Read More <i class="icon-arrow-right3"></i></a>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-3 col-sm-6 col-padding animate-box" data-animate-effect="fadeInLeft">
+							<div class="blog-entry">
+								<a href="#" class="blog-img"><img src="images/ideas4.jpg" class="img-responsive" alt="Free HTML5 Bootstrap Template by FreeHTML5.co"></a>
+								<div class="desc">
+									<h3><a href="#">织物社交互动</a></h3>
+									<span><small>by Admin </small> / <small> Web Design </small> / <small> <i class="icon-comment"></i> 2022</small></span>
+									<p>织物社交</p>
+									<a href="#" class="lead">Read More <i class="icon-arrow-right3"></i></a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+
+			</div>
+		</div>
+
+		
+
+
+
+
+		<!-- jQuery -->
+		<script src="js/jquery.min.js"></script>
+		<!-- jQuery Easing -->
+		<script src="js/jquery.easing.1.3.js"></script>
+		<!-- Bootstrap -->
+		<script src="js/bootstrap.min.js"></script>
+		<!-- Waypoints -->
+		<script src="js/jquery.waypoints.min.js"></script>
+		<!-- Flexslider -->
+		<script src="js/jquery.flexslider-min.js"></script>
+
+
+		<!-- MAIN JS -->
+		<script src="js/main.js"></script>
+
+	</body>
+</html>
+

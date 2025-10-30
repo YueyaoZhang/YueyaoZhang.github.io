@@ -1,0 +1,797 @@
+<!doctype html>
+<html>
+<head>
+    <title>Vector Style Examples</title>
+    <link rel="stylesheet" href="./css/ol.css" type="text/css" />
+    <link rel="stylesheet" href="../assets/css/samples.css" type="text/css" />
+    <link href="zyystyle2.css" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="./build/ol.js" charset="utf-8"></script>
+    <script src="./examples/resources/prism/prism.min.js"></script>
+    <script src="./examples/resources/common.js"></script>
+    <script src="./build/jquery.js"></script>
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="./build/ol.js"></script>
+    <script src="./build/jquery.js"></script>
+    <style>
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            -webkit-filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+            filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #cccccc;
+            bottom: 12px;
+            left: -50px;
+            min-width: 280px;
+        }
+        .ol-popup:after, .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+        .ol-popup:after {
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
+        }
+        .ol-popup:before {
+            border-top-color: #cccccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
+        }
+        .ol-popup-closer {
+            text-decoration: none;
+            position: absolute;
+            top: 2px;
+            right: 8px;
+        }
+        .ol-popup-closer:after {
+            content: "✖";
+        }
+    </style>
+</head>
+
+<div id="map" class="map"></div>
+<div id="popup" class="ol-popup">
+    <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+    <div id="popup-content"></div>
+</div>
+
+
+<!--返回给select函数 屏幕控制参数-->
+<form class="form-inline">
+    <label>Action type &nbsp;</label>
+    <select id="type" class="form-control">
+        <option value="click" selected>Click</option>
+        <option value="singleclick">Single-click</option>
+        <option value="pointermove">Hover</option>
+        <option value="none">None</option>
+    </select>
+    <span id="status">&nbsp;0 selected features</span>
+</form>
+
+
+
+<script>
+//数据预处理
+
+
+var defaultStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: '#FFFFFF',
+        }),
+        stroke: new ol.style.Stroke({
+            color: '#969696',
+            size: 0.1
+        })
+    });
+var ZerLevelStyle = new ol.style.Style({
+    fill: new ol.style.Fill({
+        color: '#FFF5EE',
+    }),
+    stroke: new ol.style.Stroke({
+        color: '#969696',
+        size: 0.1
+    })
+});
+var FisLevelStyle = new ol.style.Style({
+    fill: new ol.style.Fill({
+        color: '#FFE4E1',
+    }),
+    stroke: new ol.style.Stroke({
+        color: '#969696',
+        size: 0.1
+    })
+});
+var SecLevelStyle = new ol.style.Style({
+    fill: new ol.style.Fill({
+        color: '#FFA07A',
+    }),
+    stroke: new ol.style.Stroke({
+        color: '#969696',
+        size: 0.1
+    })
+});
+var ThiLevelStyle = new ol.style.Style({
+    fill: new ol.style.Fill({
+        color: '#FF6347',
+    }),
+    stroke: new ol.style.Stroke({
+        color: '#969696',
+        size: 0.1
+    })
+});
+
+
+var countries = new ol.layer.Vector({
+        source: new ol.source.Vector({
+            projection: 'EPSG：4326',
+            //url: './examples/data/geojson/countries.geojson', //多边形底图
+           url: 'CrimeOutputINTO.json',
+            format:new ol.format.GeoJSON()
+        }),
+        //style: setThestyle
+        //style: defaultStyle
+        style: function(feature, resolution) {
+            countries.getSource().forEachFeature(function(feature) {
+                var code = feature.get('Join_Count');//好像取出来了也
+                feature.set('incomeLevel', code);
+            });
+            var codetemp = feature.get('incomeLevel');
+            //var codetemp=1;
+            if (codetemp >=5001) {
+                return [ThiLevelStyle];
+            }
+            if (codetemp >=1001&codetemp <=5000) {
+                return [SecLevelStyle];
+            }
+            if (codetemp >=201 & codetemp <=1000 ) {
+                return [FisLevelStyle];
+            }
+            if (codetemp >1 & codetemp <=200) {
+                return [ZerLevelStyle];
+            }
+            else {
+                return [defaultStyle];
+            }
+        }
+    });
+
+
+var ScanDataLayer = new ol.layer.Vector({   //在map之前建立画圆的图层
+    source: new ol.source.Vector()
+});
+
+var vectorSource = new ol.source.Vector();
+var vectorLayer = new ol.layer.Vector({   //在map之前建立画圆的图层，//圆图层
+    source: vectorSource
+});
+
+    var center = ol.proj.transform([110, 30], 'EPSG:4326', 'EPSG:3857');
+    var view = new ol.View({
+        projection: 'EPSG:3857',
+        center: center,
+        zoom: 3
+    });
+    var map = new ol.Map({
+        target: 'map',
+        layers: [countries], //添加多边形
+        view: view
+    });
+
+
+    function getAttr(){
+        // GeoJsonLayer.getSource().getFeatures();
+        features =  countries.getSource().getFeatures();
+        featureshot = countries.getSource().getProperties('Join_Count');
+        featuresxy =  countries.getSource().getFeatures()[1].getGeometry();
+        //features2 = feature.get("hotpot");
+        features1 =  countries.getSource().getFeatureById('Join_Count');
+        features1type = countries.getProperties().type;
+
+        alert(featureshot[5]);
+
+        countries.getSource().forEachFeature(function(feature) {
+            var code = feature.get('Join_Count');//好像取出来了也
+                feature.set('incomeLevel', code);
+            var cdoe2 = feature.get('incomeLevel');
+            alert(cdoe2);
+        });
+    }
+
+
+
+
+/*
+// 添加一个绘制的线使用的layer
+var lineLayer = new ol.layer.Vector({
+    source: new ol.source.Vector(),
+    style: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'red',
+            size: 1
+        })
+    })
+})
+map.addLayer(lineLayer); // -first adding-
+
+map.addInteraction(new ol.interaction.Draw({
+    type: 'LineString',
+    source: lineLayer.getSource()    // 注意设置source，这样绘制好的线，就会添加到这个source里
+}));
+*/
+
+
+//添加一个圆圈
+//var circularPolygon = ol.geom.Polygon.circular(wgs84Sphere, center, 200, 64);//这一句有语法错误 会导致停止运行
+
+
+
+//一、扫描数据序列加载示例
+var ScanData =//空间型热点
+    [
+        {radius: 5, center: [118.945731,40.382717], property: 1},
+        {
+            radius: 5,
+            center: [128.945731,50.382717],
+            property: 0
+        },
+        {
+            radius: 5,
+            center: [138.945731,60.382717],
+            property: 1
+        }
+    ];
+
+
+var Center25Data =//时空型热点 25w扫描范围
+    [
+        {center: [-70.7812271,-34.0354309], time:1995/3/22,pro:1},
+        {center: [-74.9548874,-11.9902134], time:1995/3/22,pro:1},
+        {center: [-74.7409744,3.9615223], time:1995/3/22,pro:1},
+        {center: [-74.7409744,9.4827967], time:1995/3/22,pro:1},
+        {center: [-90.8556595,14.7788267], time:1995/3/22,pro:1},
+        {center: [-86.6336212,11.96278], time:1995/3/22,pro:1},
+        {center: [2.3083229,36.6297493], time:1995/3/22,pro:2},
+        {center: [-2.0198905,42.5684853], time:1995/3/22,pro:2},
+        {center: [18.01651,32.1728172], time:1995/3/22,pro:2},
+        {center: [30.0668716,29.2927055], time:1995/3/22,pro:2},
+        {center: [14.1660986,9.2981319], time:1995/3/22,pro:2},
+        {center: [46.252861,4.1304469], time:1995/3/22,pro:2},
+        {center: [42.3311462,1.4956143], time:1995/3/22,pro:2},
+        {center: [30.2807846,-1.2136739], time:1995/3/22,pro:3},
+        {center: [46.5380783,15.0113916], time:1995/3/22,pro:3},
+        {center: [42.3311462,31.9310799], time:1995/3/22,pro:3},
+        {center: [46.6093826,34.2604675], time:1995/3/22,pro:3},
+        {center: [42.3311462,36.5270958], time:1995/3/22,pro:3},
+        {center: [38.2668228,38.7292061], time:1995/3/22,pro:3},
+        {center: [38.4094315,34.2015152], time:1995/3/22,pro:3},
+        {center: [34.7155495,31.9655495], time:1995/3/22,pro:3},
+        {center: [46.252861,42.5684853], time:1995/3/22,pro:3},
+        {center: [66.6457825,32.112442], time:1995/3/22,pro:3},
+        {center: [66.5744781,36.5270958], time:1995/3/22,pro:3},
+        {center: [62.5101547,34.1425209], time:1995/3/22,pro:4},
+        {center: [70.6388016,34.0834846], time:1995/3/22,pro:4},
+        {center: [74.7737503,31.9391022], time:1995/3/22,pro:4},
+        {center: [66.5744781,27.4103069], time:1995/3/22,pro:4},
+        {center: [83.2368774,17.711731], time:1995/3/22,pro:4},
+        {center: [78.9647217,9.2730713], time:1995/3/22,pro:4},
+        {center: [98.8751526,6.5440874], time:1995/3/22,pro:4},
+        {center: [103.4391022,3.9505551], time:1995/3/22,pro:4},
+        {center: [94.7336807,25.0583763], time:1995/3/22,pro:4},
+        {center: [91.1030273,27.1568222], time:1995/3/22,pro:4},
+        {center: [86.8960953,24.9793053], time:1995/3/22,pro:4},
+        {center: [90.6035919,22.4644394], time:1995/3/22,pro:4},
+        {center: [120.5516968,14.8269396], time:1995/3/22,pro:4},
+        {center: [125.0436935,7.6832247], time:1995/3/22,pro:4},
+        {center: [22.5972195,38.826931], time:1995/3/22,pro:4},
+        {center: [-6.0566669,55.0555382], time:1995/3/22,pro:4}
+    ];
+
+var Center50Data =//时空型热点 50w扫描范围
+    [
+        {center: [46.3815536,6.850122], time:1997/6/18},
+        {center: [44.3652077,16.1246014], time:1997/6/18},
+        {center: [35.3878021,29.7693672], time:1997/6/18},
+        {center: [39.4204941,32.00811], time:1997/6/18},
+        {center: [42.3656082,36.3815651], time:1997/6/18},
+        {center: [50.6843987,38.2713928], time:1997/6/18},
+        {center: [45.9308052,42.8721008], time:1997/6/18},
+        {center: [3.0484521,34.3354797], time:1997/6/18},
+        {center: [-1.7477474,42.7151337], time:1997/6/18},
+        {center: [-4.1438193,55.8022881], time:1997/6/18},
+        {center: [-8.2674513,53.1935463], time:1997/6/18},
+        {center: [-72.0175018,9.514164], time:1997/6/18},
+        {center: [-74.6442719,4.6604919], time:1997/6/18},
+        {center: [-84.9921951,13.5195866], time:1997/6/18},
+        {center: [-89.9369049,17.3737488], time:1997/6/18},
+        {center: [-75.987793,-14.4674997], time:1997/6/18},
+        {center: [-68.8225174,-35.1247215], time:1997/6/18},
+        {center: [63.9626274,34.3151245], time:1997/6/18},
+        {center: [71.4733047,33.5262184], time:1997/6/18},
+        {center: [67.0999985,28.8103218], time:1997/6/18},
+        {center: [67.7655029,22.6481609], time:1997/6/18},
+        {center: [78.7938385,7.6474986], time:1997/6/18},
+        {center: [84.2416992,18.4960938], time:1997/6/18},
+        {center: [88.0795288,22.2352905], time:1997/6/18},
+        {center: [92.9425049,26.251503], time:1997/6/18},
+        {center: [99.6938095,4.5755997], time:1997/6/18},
+        {center: [124.5937347,9.2901182], time:1997/6/18},
+        {center: [121.4449997,13.6988897], time:1997/6/18}
+
+    ];
+
+var Center100Data =//时空型热点 100w扫描范围
+    [
+        {center: [102.3069,102.3069], time:1996/5/14},
+        {center: [90.9220428,90.9220428], time:1996/5/14},
+        {center: [80.508728,80.508728], time:1996/5/14},
+        {center: [68.4608765,68.4608765], time:1996/5/14},
+        {center: [70.8713837,70.8713837], time:1996/5/14},
+        {center: [58.4645004,58.4645004], time:1996/5/14},
+        {center: [45.0092201,45.0092201], time:1996/5/14},
+        {center: [11.1332893,11.1332893], time:1996/5/14},
+        {center: [34.2661018,34.2661018], time:1996/5/14},
+        {center: [42.6825676,42.6825676], time:1996/5/14},
+        {center: [42.3973503,42.3973503], time:1996/5/14},
+        {center: [34.7772102,34.7772102], time:1996/5/14},
+        {center: [50.4336967,50.4336967], time:1996/5/14},
+        {center: [-5.8278666,-5.8278666], time:1996/5/14},
+        {center: [-4.3622231,-4.3622231], time:1996/5/14},
+        {center: [4.8335843,4.8335843], time:1996/5/14},
+        {center: [-90.5977783,-90.5977783], time:1996/5/14},
+        {center: [-73.7672272,-73.7672272], time:1996/5/14},
+        {center: [-76.0147934,-76.0147934], time:1996/5/14},
+        {center: [-69.7150879,-69.7150879], time:1996/5/14}
+    ];
+
+//绘制点 函数
+var featureCollection=[];
+var styleFunction = function(ScanData,ScanDataVector) {
+    //数据解析，循环开始
+    for(var i = 0; i < ScanData.length; i++) {
+        var o = ScanData[i];
+        //载入坐标
+        //alert(o.center[0]);
+        x = o.center[0];//为什么一定要把数据用变量接出来？
+        y = o.center[1];
+
+        /*
+//画圆法3
+            var circleGeom = new ol.geom.Polygon([
+                createCirclePointCoords(x,y,30000,60)]);  */
+//画圆法2
+        var circle = new ol.geom.Circle(ol.proj.transform([125.5971431341708, 45.5323780468158], 'EPSG:4326', 'EPSG:3857'), 1000);
+        var CircleFeature = new ol.Feature(circle);
+//画圆法1
+        var precisionCircle = ol.geom.Polygon.circular(
+            /* WGS84 Sphere */
+            new ol.Sphere(6378137),
+            [123.5971431341708, 45.5323780468158],
+            1000,
+            /* Number of verticies */
+            64).transform('EPSG:4326', 'EPSG:3857');
+        var precisionCircleFeature = new ol.Feature(precisionCircle);
+
+
+//添加圆geometry到featrue
+        var ScanDataCircle = new ol.Feature({
+            //geometry:lowpoly
+            //geometry:new ol.geom.Circle(ol.proj.transform([x, y], 'EPSG:4326', 'EPSG:3857'),5)
+            //geometry:new ol.geom.Circle([x,y],20)
+            //geometry:new ol.geom.Polygon.circular(wgs84Sphere, [x,y], 5)
+            geometry:new ol.geom.Point(ol.proj.fromLonLat([x,y]))
+            //geometry: new ol.geom.Point([o.center[0],o.center[1]])//这一句为什么不可以？
+        });
+        if(o.property==1){   //第一类热点
+            ScanDataCircle.setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 25,//根据半径做某种计算
+                    fill: new ol.style.Fill({
+                        color: 'yellow'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: 'yellow',
+                        size: 4
+                    })
+                })
+            }));
+        }
+        if(o.property==0){   //第二类热点
+            ScanDataCircle.setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 35,
+                    fill: new ol.style.Fill({
+                        color: 'red'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: 'red',
+                        size: 4
+                    })
+                })
+            }));
+        }
+		
+        ScanDataLayer.getSource().addFeature(ScanDataCircle);
+        map.addLayer(ScanDataLayer);
+        //处理扫描结果 生成vector source
+
+
+
+        var wgs84Sphere = new ol.Sphere(6378137);
+
+        var radius = 80000;
+        for (var x = -180; x < 180; x += 30) {
+            for (var y = -90; y < 90; y += 30) {
+                //var circle = ol.geom.Polygon.circular(wgs84Sphere, [x, y], radius, 64);
+                var circle = ol.geom.Polygon.circular( //生成圆形要素
+                    /* WGS84 Sphere */
+                    new ol.Sphere(6378137),
+                    [x, y],
+                    100000,
+                    /* Number of verticies */
+                    64).transform('EPSG:4326', 'EPSG:3857');
+                //vectorSource.addFeature(new ol.Feature(circle));
+                var CircleFeature = new ol.Feature(circle); //jiangone
+
+                //此处创建了feature
+                //var CircleFeature2 = CircleFeature.geometry.clone();
+               // CircleFeature2.transform('4326', '3857');
+			   
+                vectorLayer.getSource().addFeature(CircleFeature);
+            }
+        }
+
+        map.addLayer(vectorLayer);
+
+    }//循环结束,该画法生成的结果不会放缩
+};
+//styleFunction(ScanData,ScanDataLayer);//运行
+
+//动画效果
+ 
+
+/*
+var duration = 3000;
+    function flash(feature) {
+        var start = new Date().getTime();
+        var listenerKey;
+        var radius = 0;
+        function animate(event) {
+            var vectorContext = event.vectorContext;
+            var frameState = event.frameState;
+            var flashGeom = feature.getGeometry().clone();
+            var elapsed = frameState.time - start;
+            var elapsedRatio = elapsed / duration;
+            // radius will be 5 at start and 30 at end.
+            //var radius = ol.easing.easeOut(elapsedRatio) * 25 + 5;
+            var opacity = ol.easing.easeOut(1 - elapsedRatio);
+            radius++;
+            radius = radius % 20;
+
+            var flashStyle = new ol.style.Circle({
+                radius: radius,
+                //snapToPixel: false,
+                stroke: new ol.style.Stroke({
+                    color: 'rgba(255, 0, 0, ' + opacity + ')',
+                    width: 1
+                })
+            });
+
+            vectorContext.setImageStyle(flashStyle);
+            vectorContext.drawPointGeometry(flashGeom, null);
+
+            if (elapsed > duration) {
+                ol.Observable.unByKey(listenerKey);
+                return;
+            }
+
+            // tell OL3 to continue postcompose animation
+            frameState.animate = true;
+        }
+
+        listenerKey = map.on('postcompose', animate);
+    }
+
+vectorLayer.getSource().on('addfeature', function(e) {
+    flash(e.feature);
+});
+
+*/
+
+
+
+
+
+
+//绘制圆 函数
+//定义全局变量 绘制点
+var mFeaturesTest;
+var DrawHotpot25 = function(Center25Data,vectorLayer) {
+    //数据解析，循环开始
+    for(var i = 0; i < Center25Data.length; i++) {
+        var co = Center25Data[i];
+        //载入坐标
+        //alert(co);//这个就是object类型
+        cx = co.center[0];//为什么一定要把数据用变量接出来？
+        cy = co.center[1];
+
+
+//添加圆geometry到featrue
+        var radius = 300000;
+
+     //var circle = ol.geom.Polygon.circular(wgs84Sphere, [x, y], radius, 64);
+        var circle = ol.geom.Polygon.circular(
+                    /* WGS84 Sphere */
+                    new ol.Sphere(6378137),
+                    [cx, cy],
+                     radius,
+                    /* Number of verticies */
+                    64).transform('EPSG:4326', 'EPSG:3857');
+                var CircleFeature25 = new ol.Feature(circle);
+                CircleFeature25.set('time', 5);
+				featureCollection.push(CircleFeature25);
+                vectorLayer.getSource().addFeature(CircleFeature25);
+
+                if(co.pro==1){   //间歇热点  在syle这部分添加动画
+                    CircleFeature25.setStyle(new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                            color: 'red',
+                            width: 0.2
+                        }),
+                        fill: new ol.style.Fill({
+                            color: 'transparent'
+                        })
+                    }));
+                };
+                if(co.pro==2){   //消失热点
+                    CircleFeature25.setStyle(new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                            color: 'blue',
+                            width: 0.2
+                        }),
+                        fill: new ol.style.Fill({
+                            color: 'transparent'
+                        })
+                    }));
+                };
+                if(co.pro==3){   //新增热点
+                    CircleFeature25.setStyle(new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                            color: 'green' ,
+                            width: 0.2
+                        }),
+                        fill: new ol.style.Fill({
+                            color: 'transparent'
+                        })
+                    }));
+                };
+                if(co.pro==4){   //持久热点
+                    CircleFeature25.setStyle(new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                            color: 'pink',
+                            width: 0.2
+                        }),
+                        fill: new ol.style.Fill({
+                            color: 'transparent'
+                        })
+                    }));
+                };
+
+
+
+
+        //处理扫描结果 生成vector source
+        map.addLayer(vectorLayer);
+        mFeaturesTest = vectorSource.getFeatures();//test jiangone
+        console.log(mFeaturesTest);
+
+
+
+/*
+        var radius = 0;
+        map.on('postcompose', function(mFeaturesTest){
+            alert("???");
+            // 增大半径，最大20
+            radius++;
+            radius = radius % 20;
+            // 设置样式
+            mFeaturesTest.setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: radius,
+                    stroke: new ol.style.Stroke({
+                        color: 'red',
+                        size: 1
+                    })
+                })
+            }));
+
+            map.render();
+        })
+*/
+    }//循环结束
+
+
+};
+DrawHotpot25(Center25Data,vectorLayer);//运行
+
+var radius=20;
+ alert(featureCollection.length);
+	  //featureCollection = CirclevectorLayer.getSource().getFeatures();
+	 /*
+	  map.on('postcompose', function(){
+        // 增大半径，最大20
+        radius++;
+        radius = radius % 20;//半径最大为20
+        // 设置样式
+		for(var i=0;i<featureCollection.length;i++){
+		//alert(i);
+		       featureCollection[i].setStyle(new ol.style.Style({
+					image: new ol.style.Circle({
+						radius: 35,
+					
+						stroke: new ol.style.Stroke({
+							color: 'red',
+							size: 1
+						})
+						
+					})
+				}));
+				map.render();
+		}
+    })
+	*/
+	 function addRandomFeature() {
+	  // 增大半径，最大20
+        radius++;
+        radius = radius % 20;//半径最大为20
+        // 设置样式
+		for(var i=0;i<featureCollection.length;i++){
+		
+		        featureCollection[i].setStyle(new ol.style.Style({
+					image: new ol.style.Circle({
+						radius: radius,
+
+						stroke: new ol.style.Stroke({
+							color: 'red',
+							size: 1
+						})
+					})
+				}));
+		}
+	  }
+	  
+	  //添加刷新函数
+	  window.setInterval(addRandomFeature, 100);
+
+
+
+//选择元素  弹出popup
+
+
+
+//popup
+var container = document.getElementById('popup');
+var content = document.getElementById('popup-content');
+var closer = document.getElementById('popup-closer');
+
+
+var overlay = new ol.Overlay({
+    element: container,
+    autoPan: true,
+    autoPanAnimation: {
+        duration: 250
+    }
+});
+
+
+closer.onclick = function() {
+    overlay.setPosition(undefined);
+    closer.blur();
+    return false;
+};
+
+
+ // 创建select control
+var select = null;  // ref to currently selected interaction
+
+// select interaction working on "singleclick"
+var selectSingleClick = new ol.interaction.Select();
+
+// select interaction working on "click"
+var selectClick = new ol.interaction.Select({
+    condition: ol.events.condition.click
+});
+var selectElement = document.getElementById('type');
+
+var changeInteraction = function() {
+    if (select !== null) {
+        map.removeInteraction(select);
+    }
+    var value = selectElement.value;
+    if (value == 'singleclick') {
+        select = selectSingleClick;
+    }
+    if (value == 'click') {
+        select = selectClick;
+    }
+    if (select !== null) {
+        map.addInteraction(select);
+        select.on('select', function(e) {  //选择到要素,竟然是这个函数先触发
+           //高亮要素,获取城市信息
+            //var fl = select.getFeatures().getArray().length;
+            //var fJ = select.getFeatures().get('center');
+            //var fC = select.getFeatures().getArray()[0].get('center');
+            //var fI =  e.target.getFeatures().getArray()[0].get('center');
+           // var fF =  e.target.getFeatures().getArray()[0].getProperties();
+           // var mName = fF.center;
+            var mFeaturesTest = vectorSource.getFeatures();
+            console.log(mFeaturesTest);
+            var mTest = select.getFeatures();
+            var mFeatures = e.target.getFeatures();
+            console.log(mFeatures);
+            var mFeatureArray = mFeatures.getArray();
+            console.log(mFeatureArray);
+            var mFeature = mFeatureArray[0];
+            var mProperties = mFeature.getProperties();
+            console.log(mFeature);
+            var mName = mProperties.time; //直接换成center，属性名称
+            console.log(mName);
+            var fP =  e.target.getProperties();//这个好像get到了object.CODE
+            var code = e.target.get('center');//好像取出来了也这一句在前文是取出拉了的  这里只能去出undefined
+            fpx = fP.center;//为什么一定要把数据用变量接出来？
+            fpy = fP[1];
+            console.log(e.selected);
+
+
+            map.on('singleclick', function(evt) {  //选择到点,这样嵌套写真的没问题吗
+                var coordinate = evt.coordinate;
+                var hdms = ol.coordinate.toStringHDMS(ol.proj.transform(
+                    coordinate, 'EPSG:3857', 'EPSG:4326'));
+                //alert(coordinate);//undefined
+                content.innerHTML = '<p>You clicked here:</p><code>' + hdms + '</code>';
+                //载入选择feature处获得的时间/城市信息，判断如果没有获取到城市信息，则显示“无
+                overlay.setPosition(coordinate);
+                map.addOverlay(overlay);
+            });
+
+//var coordinates = e.target.getGeometry().getCoordinates()[0];
+            // var polygon = e.feature.getGeometry();//有误
+            //var center = polygon.getCenter(),radius = polygon.getRadius(),extent = polygon.getExtent();
+            //alert(center);//undefined
+           // var geomType = e.target.getFeatures().getArray()[0].getGeometry().getType().toLowerCase();
+            console.log(mName);
+       alert(mName);//undefined
+        });
+
+
+
+    }
+};
+
+selectElement.onchange = changeInteraction;
+changeInteraction();
+
+
+
+
+
+</script>
+
+
+
+
+
+<!--div>
+    <button onclick="getAttr()">CLICK</button>
+</div-->
+</body>
+</html>

@@ -1,0 +1,12 @@
+body {
+    background-image:url(top.jpg);
+
+}
+.myCharts
+{
+    position:absolute;
+    background-image:url('back.png');
+    margin-bottom: 10px;
+}
+
+.toptitle{position:fixed; top:0; left:0; width:100%; height:20px; background:#FCC;}

@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--link href="./css/ol.css" rel="stylesheet" type="text/css"-->
+    <link href="zyystyle2.css" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="./build/ol.js" charset="utf-8"></script>
+    <script src="./examples/resources/prism/prism.min.js"></script>
+    <script src="./examples/resources/common.js"></script>
+    <script src="./build/jquery.js"></script>
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+	<!--script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script--> 
+	<script src="d3.min.js" charset="utf-8"></script> 
+    <style>
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            -webkit-filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+            filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #cccccc;
+            bottom: 12px;
+            left: -50px;
+            min-width: 110px;
+            opacity: 0.5;
+        }
+        .ol-popup:after, .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+        .ol-popup:after {
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
+        }
+        .ol-popup:before {
+            border-top-color: #cccccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
+        }
+        .ol-popup-closer {
+            text-decoration: none;
+            position: absolute;
+            top: 2px;
+            right: 8px;
+        }
+        .ol-popup-closer:after {
+            content: "- ";
+        }
+		
+	.axis path,  
+	.axis line
+	{
+		fill: none;
+		stroke: #8B8682;
+		shape-rendering: crispEdges;
+	}
+ 
+	.axis text {
+	color: #343434;
+	font-family: sans-serif;
+	font-size: 9px;
+	
+	}
+
+</style>  <!--popup样式-->
+</head>
+<body>
+<!--标题&说明-->
+<div title="This interface is used to demonstrate the visualization results of crime hotspots based on statistical methods of spatio-temporal scanning. The main view is the analysis result of the space-time scanning hotspot;Click the right control bar to switch to the spatial scanning hot spot analysis result; the lower auxiliary view is the practice scanning analysis result, and the right is the hot spot detailed information list." class="toptitle"></div>
+<div>     <!--最大外框-->
+<div id="popup" class="ol-popup">   <!--popup-->
+        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+        <div id="popup-content"></div>
+ </div>
+<div id="map" style="width: 99%;height:100%;position:absolute;z-index:0;top:0;"></div>   <!--底层地图-->
+
+    <!--返回给select函数 屏幕控制参数-->
+<form class="form-inline">
+        <select id="type" class="form-control">
+            <option value="click" selected></option>
+            <option value="singleclick"></option>
+            <option value="pointermove"></option>
+            <option value="none"></option>
+        </select>
+        <span id="status"></span>
+</form>
+
+<script type="text/javascript">
+
+
+    var datatag = 1;//记录当前加载时空数据tag 默认为1
+	var timetag = 1;//记录当前加载空间数据tag 默认为1
+    //创建地图
+    var gaodeLayer = new ol.layer.Tile({
+        source: new ol.source.XYZ({
+            url:'http://webst0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}'
+        })
+    });
+
+
+
+
+   //二、自定义的json数据
+    var geojsonObject = {
+        'type': 'FeatureCollection',
+        'crs': {
+            'type': 'name',
+            'properties': {
+                'name': 'EPSG:4326'
+            }
+        },
+        'features': [{
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [0, 0]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [[4e6, -2e6], [8e6, 2e6]]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [[4e6, 2e6], [8e6, -2e6]]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Polygon',
+                'coordinates': [[[-5e6, -1e6], [-4e6, 1e6], [-3e6, -1e6]]]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'MultiLineString',
+                'coordinates': [
+                    [[-1e6, -7.5e5], [-1e6, 7.5e5]],
+                    [[1e6, -7.5e5], [1e6, 7.5e5]],
+                    [[-7.5e5, -1e6], [7.5e5, -1e6]],
+                    [[-7.5e5, 1e6], [7.5e5, 1e6]]
+                ]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'MultiPolygon',
+                'coordinates': [
+                    [[[-5e6, 6e6], [-5e6, 8e6], [-3e6, 8e6], [-3e6, 6e6]]],
+                    [[[-2e6, 6e6], [-2e6, 8e6], [0, 8e6], [0, 6e6]]],
+                    [[[1e6, 6e6], [1e6, 8e6], [3e6, 8e6], [3e6, 6e6]]]
+                ]
+            }
+        }, {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'GeometryCollection',
+                'geometries': [{
+                    'type': 'LineString',
+                    'coordinates': [[-5e6, -5e6], [0, -5e6]]
+                }, {
+                    'type': 'Point',
+                    'coordinates': [4e6, -5e6]
+                }, {
+                    'type': 'Polygon',
+                    'coordinates': [[[1e6, -6e6], [2e6, -4e6], [3e6, -6e6]]]
+                }]
+            }
+        }]
+    };
+	//分时段空间热点数据  固定扫描范围（另外添加说明  可以动态扫描范围var Center25Data =//时空型热点 25w扫描范围
+        var Center1976Data =//空间型热点 1976
+        [
+	{center: [	10.1012363	,	44.0793381	], time:"1976",pro:1},
+	{center: [	3.065448	,	50.6313667	], time:"1976",pro:1},
+	{center: [	-76.5221176	,	3.4206281	], time:"1976",pro:1}
+	    ];
+		 var Center1986Data =//空型热点 1986
+        [
+{center: [	-75.8991394	,	-11.5192003	], time:"1986",pro:1},
+{center: [	-74.3492203	,	4.6673598	], time:"1986",pro:1},
+{center: [	-88.5833359	,	13.3166666	], time:"1986",pro:1},
+{center: [	8.915122	,	50.1353989	], time:"1986",pro:1},
+{center: [	-4.0244761	,	39.8567772	], time:"1986",pro:1},
+{center: [	30.3766956	,	-29.6014385	], time:"1986",pro:1},
+{center: [	124.884697	,	11.7762356	], time:"1986",pro:1},
+
+	    ];
+		 var Center1996Data =//空型热点 1996
+        [
+{center: [	-74.002449	,	4.2547998	], time:"1996",pro:1},
+{center: [	-89.0454102	,	13.7864609	], time:"1996",pro:1},
+{center: [	8.5330725	,	52.0230637	], time:"1996",pro:1},
+{center: [	2.65747	,	36.6250305	], time:"1996",pro:1},
+{center: [	18.6047955	,	44.1290398	], time:"1996",pro:1},
+{center: [	35.8619232	,	37.411602	], time:"1996",pro:1},
+{center: [	72.9223785	,	31.7526035	], time:"1996",pro:1},
+{center: [	90.7291336	,	24.8861008	], time:"1996",pro:1},
+{center: [	79.8741684	,	9.7338886	], time:"1996",pro:1},
+
+	    ];
+		 var Center2006Data =//空型热点 25w扫描范围
+        [
+{center: [	-75.4283295	,	5.7903652	], time:"2006",pro:1},
+{center: [	3.902	,	36.3748894	], time:"2006",pro:1},
+{center: [	44.6406822	,	34.8907013	], time:"2006",pro:1},
+{center: [	65.9036255	,	32.6664047	], time:"2006",pro:1},
+{center: [	88.9342499	,	24.8043289	], time:"2006",pro:1},
+{center: [	125.4339447	,	11.6083088	], time:"2006",pro:1},
+{center: [	22.4499283	,	13.4500952	], time:"2006",pro:1},
+{center: [	70.8230591	,	34.1872215	], time:"2006",pro:1},
+
+	    ];
+		 var Center2016Data =//空间型热点 
+        [
+{center: [	67.6439743	,	36.4661064	], time:"2016",pro:1},
+{center: [	72.3740311	,	32.7825775	], time:"2016",pro:1},
+{center: [	66.544693	,	29.1161366	], time:"2016",pro:1},
+{center: [	87.5360336	,	24.4020061	], time:"2016",pro:1},
+{center: [	81.5102692	,	19.4352341	], time:"2016",pro:1},
+{center: [	44.2907219	,	14.7953377	], time:"2016",pro:1},
+{center: [	41.0128059	,	38.1412239	], time:"2016",pro:1},
+{center: [	44.0066376	,	34.206192	], time:"2016",pro:1},
+{center: [	35.2820091	,	32.6950035	], time:"2016",pro:1},
+{center: [	13.5796633	,	12.5263529	], time:"2016",pro:1},
+{center: [	7.395833	,	6.856667	], time:"2016",pro:1},
+{center: [	-2.95	,	15	], time:"2016",pro:1},
+{center: [	-7.3546419	,	53.9955826	], time:"2016",pro:1},
+{center: [	-73.7322006	,	5.7051849	], time:"2016",pro:1},
+{center: [	29.0048237	,	-0.976624	], time:"2016",pro:1},
+{center: [	24.4662762	,	13.1363039	], time:"2016",pro:1},
+{center: [	125.0086441	,	7.996038	], time:"2016",pro:1},
+{center: [	120.9156799	,	15.6131916	], time:"2016",pro:1},
+{center: [	9.7973251	,	50.9693947	], time:"2016",pro:1},
+{center: [	42.4503593	,	1.642952	], time:"2016",pro:1},
+{center: [	17.5507679	,	30.8746796	], time:"2016",pro:1},
+
+	    ];
+
+	
+	
+    //时空热点扫描数据
+    var Center25Data =//时空型热点 25w扫描范围
+        [
+            {center: [-70.7812271,-34.0354309], time:"1995/3/22",pro:1},
+            {center: [-74.9548874,-11.9902134], time:"1995/3/22",pro:1},
+            {center: [-74.7409744,3.9615223], time:"1995/3/22",pro:1},
+            {center: [-74.7409744,9.4827967], time:"1995/3/22",pro:1},
+            {center: [-90.8556595,14.7788267], time:"1995/3/22",pro:1},
+            {center: [-86.6336212,11.96278], time:"1995/3/22",pro:1},
+            {center: [2.3083229,36.6297493], time:"1995/3/22",pro:2},
+            {center: [-2.0198905,42.5684853], time:"1995/3/22",pro:2},
+            {center: [18.01651,32.1728172], time:"1995/3/22",pro:2},
+            {center: [30.0668716,29.2927055], time:"1995/3/22",pro:2},
+            {center: [14.1660986,9.2981319], time:"1995/3/22",pro:2},
+            {center: [46.252861,4.1304469], time:"1995/3/22",pro:2},
+            {center: [42.3311462,1.4956143], time:"1995/3/22",pro:2},
+            {center: [30.2807846,-1.2136739], time:"1995/3/22",pro:3},
+            {center: [46.5380783,15.0113916], time:"1995/3/22",pro:3},
+            {center: [42.3311462,31.9310799], time:"1995/3/22",pro:3},
+            {center: [46.6093826,34.2604675], time:"1995/3/22",pro:3},
+            {center: [42.3311462,36.5270958], time:"1995/3/22",pro:3},
+            {center: [38.2668228,38.7292061], time:"1995/3/22",pro:3},
+            {center: [38.4094315,34.2015152], time:"1995/3/22",pro:3},
+            {center: [34.7155495,31.9655495], time:"1995/3/22",pro:3},
+            {center: [46.252861,42.5684853], time:"1995/3/22",pro:3},
+            {center: [66.6457825,32.112442], time:"1995/3/22",pro:3},
+            {center: [66.5744781,36.5270958], time:"1995/3/22",pro:3},
+            {center: [62.5101547,34.1425209], time:"1995/3/22",pro:4},
+            {center: [70.6388016,34.0834846], time:"1995/3/22",pro:4},
+            {center: [74.7737503,31.9391022], time:"1995/3/22",pro:4},
+            {center: [66.5744781,27.4103069], time:"1995/3/22",pro:4},
+            {center: [83.2368774,17.711731], time:"1995/3/22",pro:4},
+            {center: [78.9647217,9.2730713], time:"1995/3/22",pro:4},
+            {center: [98.8751526,6.5440874], time:"1995/3/22",pro:4},
+            {center: [103.4391022,3.9505551], time:"1995/3/22",pro:4},
+            {center: [94.7336807,25.0583763], time:"1995/3/22",pro:4},
+            {center: [91.1030273,27.1568222], time:"1995/3/22",pro:4},
+            {center: [86.8960953,24.9793053], time:"1995/3/22",pro:4},
+            {center: [90.6035919,22.4644394], time:"1995/3/22",pro:4},
+            {center: [120.5516968,14.8269396], time:"1995/3/22",pro:4},
+            {center: [125.0436935,7.6832247], time:"1995/3/22",pro:4},
+            {center: [22.5972195,38.826931], time:"1995/3/22",pro:4},
+            {center: [-6.0566669,55.0555382], time:"1995/3/22",pro:4}
+        ];
+
+    var Center50Data =//时空型热点 50w扫描范围
+        [
+            {center: [46.3815536,6.850122], time:"1997/6/18",pro:4},
+            {center: [44.3652077,16.1246014], time:"1997/6/18",pro:4},
+            {center: [35.3878021,29.7693672], time:"1997/6/18",pro:4},
+            {center: [39.4204941,32.00811], time:"1997/6/18",pro:4},
+            {center: [42.3656082,36.3815651], time:"1997/6/18",pro:4},
+            {center: [50.6843987,38.2713928], time:"1997/6/18",pro:4},
+            {center: [45.9308052,42.8721008], time:"1997/6/18",pro:3},
+            {center: [3.0484521,34.3354797], time:"1997/6/18",pro:3},
+            {center: [-1.7477474,42.7151337], time:"1997/6/18",pro:3},
+            {center: [-4.1438193,55.8022881], time:"1997/6/18",pro:3},
+            {center: [-8.2674513,53.1935463], time:"1997/6/18",pro:3},
+            {center: [-72.0175018,9.514164], time:"1997/6/18",pro:3},
+            {center: [-74.6442719,4.6604919], time:"1997/6/18",pro:4},
+            {center: [-84.9921951,13.5195866], time:"1997/6/18",pro:3},
+            {center: [-89.9369049,17.3737488], time:"1997/6/18",pro:1},
+            {center: [-75.987793,-14.4674997], time:"1997/6/18",pro:1},
+            {center: [-68.8225174,-35.1247215], time:"1997/6/18",pro:1},
+            {center: [63.9626274,34.3151245], time:"1997/6/18",pro:2},
+            {center: [71.4733047,33.5262184], time:"1997/6/18",pro:2},
+            {center: [67.0999985,28.8103218], time:"1997/6/18",pro:2},
+            {center: [67.7655029,22.6481609], time:"1997/6/18",pro:2},
+            {center: [78.7938385,7.6474986], time:"1997/6/18",pro:2},
+            {center: [84.2416992,18.4960938], time:"1997/6/18",pro:1},
+            {center: [88.0795288,22.2352905], time:"1997/6/18",pro:1},
+            {center: [92.9425049,26.251503], time:"1997/6/18",pro:1},
+            {center: [99.6938095,4.5755997], time:"1997/6/18",pro:1},
+            {center: [124.5937347,9.2901182], time:"1997/6/18",pro:1},
+            {center: [121.4449997,13.6988897], time:"1997/6/18",pro:1}
+
+        ];
+
+    var Center100Data =//时空型热点 100w扫描范围
+        [//数据错误
+            {center:[102.3069,4.773994],time:"1996/5/14",pro:1},
+            {center:[90.9220428,20.9572964],time:"1996/5/14",pro:1},
+            {center:[80.508728,28.5670776],time:"1996/5/14",pro:1},
+            {center:[68.4608765,23.4083252],time:"1996/5/14",pro:2},
+            {center:[70.8713837,34.4205742],time:"1996/5/14",pro:2},
+            {center:[58.4645004,32.1558838],time:"1996/5/14",pro:2},
+            {center:[45.0092201,1.8634692],time:"1996/5/14",pro:2},
+            {center:[11.1332893,9.602087],time:"1996/5/14",pro:2},
+            {center:[34.2661018,27.8086109],time:"1996/5/14",pro:3},
+            {center:[42.6825676,32.3568802],time:"1996/5/14",pro:3},
+            {center:[42.3973503,40.5981674],time:"1996/5/14",pro:3},
+            {center:[34.7772102,36.8086014],time:"1996/5/14",pro:3},
+            {center:[50.4336967,34.3354797],time:"1996/5/14",pro:3},
+            {center:[-5.8278666,40.6342506],time:"1996/5/14",pro:3},
+            {center:[-4.3622231,54.3163795],time:"1996/5/14",pro:4},
+            {center:[4.8335843,44.6358528],time:"1996/5/14",pro:4},
+            {center:[-90.5977783,13.9263897],time:"1996/5/14",pro:4},
+            {center:[-73.7672272,6.850122],time:"1996/5/14",pro:4},
+            {center:[-76.0147934,-3.9102447],time:"1996/5/14",pro:4},
+            {center:[-69.7150879,-11.8273115],time:"1996/5/14",pro:4}
+        ];
+
+    //contrystyle 测试样式选择功能
+
+    var defaultStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color:  'rgba(120,120,120,0.9)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.1
+        })
+    });
+    var ZerLevelStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(170,170,170,0.7)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.1
+        })
+    });
+    var FisLevelStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(200,200,200,0.9)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.1
+        })
+    });
+    var SecLevelStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(230,230,230,0.9)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.1
+        })
+    });
+    var ThiLevelStyle = new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(255,255,255,0.9)',
+        }),
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.1)',
+            size: 0.2
+        })
+    });
+
+    //pointstyle
+    var image = new ol.style.Circle({
+        radius: 5,
+        fill: null,
+        stroke: new ol.style.Stroke({color: 'red', width: 1})
+    });
+    var styles = {
+        'Point': new ol.style.Style({
+            image: image
+        }),
+        'LineString': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'green',
+                width: 1
+            })
+        }),
+        'MultiLineString': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'green',
+                width: 1
+            })
+        }),
+        'MultiPoint': new ol.style.Style({
+            image: image
+        }),
+        'MultiPolygon': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'yellow',
+                width: 1
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255, 255, 0, 0.1)'
+            })
+        }),
+        'Polygon': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'blue',
+                lineDash: [4],
+                width: 3
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(0, 0, 255, 0.1)'
+            })
+        }),
+        'GeometryCollection': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'magenta',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'magenta'
+            }),
+            image: new ol.style.Circle({
+                radius: 10,
+                fill: null,
+                stroke: new ol.style.Stroke({
+                    color: 'magenta'
+                })
+            })
+        }),
+        'Circle': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'red',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,0,0,0.2)'
+            })
+        })
+    };
+    var styleFunction = function(feature) {
+        //alert("checking");//进入了，问题出在选择部分,导致无法返回正确结果
+        return styles[feature.getGeometry().getType()];
+    };
+    var pointstyle  = new ol.style.Style({
+        image: new ol.style.Icon({
+            anchor: [0.5, 0.5],
+            size: [52, 52],
+            offset: [52, 0],
+            opacity: 0.8,
+            scale: 0.25,
+            src: 'bigdata.png'//这个图片的改变会导致显示效果的变化
+        })
+    });
+    var stylepointFunction = function(feature) {
+        return [pointstyle];
+    };
+
+
+
+    //加载geojson数据
+    var GeoJsonLayer = new ol.layer.Vector({
+        source: new ol.source.Vector({
+            projection: 'EPSG:4326',
+            //url: './examples/data/geojson/countries.geojson',
+            url:'CrimeOutputINTO.json',//部分测试数据
+			//url:'CrimeOutput3857into4326.json',//全部数据   用于最终截图
+            //format: new ol.format.TopoJSON
+			format:new ol.format.GeoJSON()
+        }),
+       // style: setThestyle
+        /*style: function(feature) {
+            style.getText().setText(feature.get('name'));
+            return style;
+        }*/
+        style: function(feature, resolution) {
+            GeoJsonLayer.getSource().forEachFeature(function(feature) {
+                var code = feature.get('Join_Count');//好像取出来了也
+                feature.set('incomeLevel', code);
+            });
+            var codetemp = feature.get('incomeLevel');
+            if (codetemp >=5001) {
+                return [ThiLevelStyle];
+            }
+            if (codetemp >=1001&codetemp <=5000) {
+                return [SecLevelStyle];
+            }
+            if (codetemp >=201 & codetemp <=1000 ) {
+                return [FisLevelStyle];
+            }
+            if (codetemp >1 & codetemp <=200) {
+                return [ZerLevelStyle];
+            }
+            else {
+                return [defaultStyle];
+            }
+        }
+    });
+    var PointLayer = new ol.layer.Vector({
+        title: 'add Layer',
+        source: new ol.source.Vector({
+            projection: 'EPSG:4326',
+            url: 'origin4.json',
+            format:new ol.format.GeoJSON()
+            // extractStyles: false
+        }),
+        style: stylepointFunction
+        //style:pointstyle
+    });
+    var vectorSource = new ol.source.Vector({  //测试各类json要素的加载
+        features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+    });
+    //vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6)));
+    var vectorLayer = new ol.layer.Vector({
+        source: vectorSource,
+        format:new ol.format.GeoJSON()
+        //style: styleFunction//根本不会进入这个函数，可是前面验证是进入了的
+    });
+    var ScanDataLayer = new ol.layer.Vector({   //测试画point函数
+        source: new ol.source.Vector()
+    });//动态接入扫描数据，结构体数组
+    var CirclevectorSource = new ol.source.Vector();
+    var CirclevectorLayer = new ol.layer.Vector({   //在map之前建立画圆的图层
+        source: CirclevectorSource
+    });
+    var Anisource = new ol.source.Vector({
+        wrapX: false
+    });
+    var Anivector = new ol.layer.Vector({
+        source: Anisource
+    });
+
+
+    var CurrenView = new ol.View({
+        zoom:3,
+        minZoom: 3,
+        maxZoom: 15,
+        projection: 'EPSG:3857',
+        center : ol.proj.transform([0,23.96822], 'EPSG:4326', 'EPSG:3857')
+        //center : [100.2435,23.96822]
+
+    });
+    //加载地图
+    var map = new ol.Map({
+        target: 'map',
+        controls: ol.control.defaults({
+            attributionOptions: {
+                collapsible: false
+            }
+        }),
+        //layers:[gaodeLayer,GeoJsonLayer,PointLayer,vectorLayer],
+        layers:[gaodeLayer,GeoJsonLayer],//有地图版本
+		//layers:[gaodeLayer],//无地图版本
+        view: CurrenView
+    });
+
+
+
+/*
+
+    //一、扫描数据序列加载示例  绘制点point函数
+    var ScanData =//空间型热点
+        [
+            {
+                radius: 5,
+                center: [118.945731,40.382717],
+                property: 1
+            },
+            {
+                radius: 5,
+                center: [128.945731,50.382717],
+                property: 0
+            },
+            {
+                radius: 5,
+                center: [138.945731,60.382717],
+                property: 1
+            }
+        ];
+    //定义全局变量
+    var styleFunction = function(ScanData,ScanDataVector) {
+        //数据解析，循环开始
+        for(var i = 0; i < ScanData.length; i++) {
+            var o = ScanData[i];
+            //载入坐标
+            //alert(o.center[0]);
+            x = o.center[0];//为什么一定要把数据用变量接出来？
+            y = o.center[1];
+
+        
+//画圆法3
+            //var circleGeom = new ol.geom.Polygon([
+                //createCirclePointCoords(x,y,30000,60)]);  
+//画圆法2
+            var circle = new ol.geom.Circle(ol.proj.transform([125.5971431341708, 45.5323780468158], 'EPSG:4326', 'EPSG:3857'), 1000);
+            var CircleFeature = new ol.Feature(circle);
+//画圆法1
+           var precisionCircle = ol.geom.Polygon.circular(
+                // WGS84 Sphere 
+                new ol.Sphere(6378137),
+                [123.5971431341708, 45.5323780468158],
+                1000,
+                // Number of verticies 
+                64).transform('EPSG:4326', 'EPSG:3857');
+            var precisionCircleFeature = new ol.Feature(precisionCircle);
+
+            var ScanDataCircle = new ol.Feature({
+                //geometry:lowpoly
+                //geometry:new ol.geom.Circle(ol.proj.transform([x, y], 'EPSG:4326', 'EPSG:3857'),5)
+               //geometry:new ol.geom.Circle([x,y],20)
+               //geometry:new ol.geom.Polygon.circular(wgs84Sphere, [x,y], 5)
+               geometry:new ol.geom.Point(ol.proj.fromLonLat([x,y]))
+               //geometry: new ol.geom.Point([o.center[0],o.center[1]])//这一句为什么不可以？
+            });
+            if(o.property==1){   //第一类热点
+                ScanDataCircle.setStyle(new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 25,//做某种计算
+                        fill: new ol.style.Fill({
+                            color: 'yellow'
+                        }),
+                        stroke: new ol.style.Stroke({
+                            color: 'yellow',
+                            size: 4
+                        })
+                    })
+                }));
+            }
+            if(o.property==0){   //第二类热点
+                ScanDataCircle.setStyle(new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 35,
+                        fill: new ol.style.Fill({
+                            color: 'red'
+                        }),
+                        stroke: new ol.style.Stroke({
+                            color: 'red',
+                            size: 4
+                        })
+                    })
+                }));
+            }
+            ScanDataLayer.getSource().addFeature(ScanDataCircle);
+            map.addLayer(ScanDataLayer);
+            //处理扫描结果 生成vector source
+        }//循环结束,该画法生成的结果不会放缩
+    };
+    styleFunction(ScanData,ScanDataLayer);//运行
+	
+	
+*/
+
+
+    var features;
+    //属性查询
+    function getAttr() {
+        // GeoJsonLayer.getSource().getFeatures();
+        features = GeoJsonLayer.getSource().getFeatures();
+        featureshot = GeoJsonLayer.getSource().getProperties('name');
+        featuresxy = GeoJsonLayer.getSource().getFeatures()[1].getGeometry();
+        featurespro = GeoJsonLayer.getSource().getFeatures()[1].getProperties('name');
+        //features2 = feature.get("hotpot");
+        features1 = GeoJsonLayer.getSource().getFeatureById('name');
+        features2 = GeoJsonLayer.getProperties().type;
+
+    }
+
+    //绘制圆 函数
+    //定义全局变量 绘制点
+    var radius = 300000;//全局变量 半径
+    var currentcolor = [];  //色彩的全局变量
+    var DrawHotpot = function(Center25Data,CirclevectorLayer) {
+        //数据解析，循环开始
+        currentcolor = [];//数据初始化
+        for(var i = 0; i < Center25Data.length; i++) {
+            var co = Center25Data[i];
+            //载入坐标
+            //alert(co);//这个就是object类型
+            var cx = co.center[0];//为什么一定要把数据用变量接出来？
+            var cy = co.center[1];
+            var ctime = co.time;
+            console.log(ctime);
+//添加圆geometry到featrue
+            radius = 300000+(datatag-1)*200000;//变化半径
+            //var circle = ol.geom.Polygon.circular(wgs84Sphere, [x, y], radius, 64);
+            var circle = ol.geom.Polygon.circular(
+                /* WGS84 Sphere */
+                new ol.Sphere(6378137),
+                [cx, cy],
+                radius,
+                /* Number of verticies */
+                64).transform('EPSG:4326', 'EPSG:3857');
+            var CircleFeature25 = new ol.Feature(circle);
+            CirclevectorLayer.getSource().addFeature(CircleFeature25);
+            CircleFeature25.set('time', ctime);//写入属性
+            CircleFeature25.set('Labelx', cx);//写入属性
+            CircleFeature25.set('Labely', cy);//写入属性
+            if(co.pro==1){   //间歇热点  在syle这部分添加动画
+                CircleFeature25.setStyle(new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: '#CD4F39',
+                        width: 0.2
+                    }),
+                    fill: new ol.style.Fill({
+                        color: 'transparent'
+                    })
+                }));
+                currentcolor.push('#CD4F39');
+            };
+            if(co.pro==2){   //消失热点
+                CircleFeature25.setStyle(new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: '#FFD700',
+                        width: 0.2
+                    }),
+                    fill: new ol.style.Fill({
+                        color: 'transparent'
+                    })
+                }));
+                currentcolor.push('#FFD700');
+            };
+            if(co.pro==3){   //新增热点
+                CircleFeature25.setStyle(new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: '#FF7256' ,
+                        width: 0.2
+                    }),
+                    fill: new ol.style.Fill({
+                        color: 'transparent'
+                    })
+                }));
+                currentcolor.push('#FF7256');
+            };
+            if(co.pro==4){   //持久热点
+                CircleFeature25.setStyle(new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: '#FFA54F',
+                        width: 0.2
+                    }),
+                    fill: new ol.style.Fill({
+                        color: 'transparent'
+                    })
+                }));
+                currentcolor.push('#FFA54F');
+            };
+            //处理扫描结果 生成vector source
+
+        }//循环结束
+        map.addLayer(CirclevectorLayer);
+
+    };
+    DrawHotpot(Center25Data,CirclevectorLayer);//运行 加载热点函数
+
+//动画效果
+
+    //利用点图层做中心动效
+    var featureCollection=[];
+    var DrawAni = function(Center25Data,Anivector) {
+        featureCollection=[];//初始化 清空
+        for (var i = 0; i < Center25Data.length; i++) {
+            var co = Center25Data[i];
+            //载入坐标
+            //alert(co);//这个就是object类型
+            var cx = co.center[0];//为什么一定要把数据用变量接出来？
+            var cy = co.center[1];
+            var geom = new ol.geom.Point(ol.proj.transform([cx, cy],
+                'EPSG:4326', 'EPSG:3857'));
+            var Pointfeature = new ol.Feature(geom);
+            Pointfeature.setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 10,
+                    stroke: new ol.style.Stroke({
+                        color: currentcolor[i],
+                        size: 1
+                    })
+                })
+            }));
+            featureCollection.push(Pointfeature);//添加到集合中
+            Anisource.addFeature(Pointfeature);
+        }
+        map.addLayer(Anivector);
+    };
+    DrawAni(Center25Data,Anivector);//运行 加载热点函数
+
+    var pointradius=0;
+    //25 r20  50 r50 100r100
+    map.on('postcompose', function(){
+        // 增大半径，最大20
+        pointradius++;
+        pointradius = pointradius % ((19+(datatag+timetag-1)*10)*(CurrenView.getZoom()-2));//半径最大为20
+        // 设置样式
+        for(var i=0;i<featureCollection.length;i++){
+            featureCollection[i].setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: pointradius,
+                    fill: new ol.style.Fill({
+                        color: 'rgba(255, 255, 255, 0.2 )'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: currentcolor[i],
+                        size: 1
+                    })
+                })
+            }));
+        }
+    });
+
+
+    //添加刷新函数
+    //window.setInterval(DrawAni(Center25Data,Anivector), 100);
+
+
+
+
+    //popup 弹出框
+    var container = document.getElementById('popup');
+    var content = document.getElementById('popup-content');
+    var closer = document.getElementById('popup-closer');
+
+    var overlay = new ol.Overlay({
+        element: container,
+        autoPan: true,
+        autoPanAnimation: {
+            duration: 250
+        }
+    });
+
+    closer.onclick = function() {
+        overlay.setPosition(undefined);
+        closer.blur();
+        return false;
+    };
+
+    // 创建select control
+    var select = null;  // ref to currently selected interaction
+
+    // select interaction working on "singleclick"
+    var selectSingleClick = new ol.interaction.Select();
+
+    // select interaction working on "click"
+    var selectClick = new ol.interaction.Select({
+        condition: ol.events.condition.click
+    });
+    var selectElement = document.getElementById('type');
+
+    var changeInteraction = function() {
+        if (select !== null) {
+            map.removeInteraction(select);
+        }
+        var value = selectElement.value;
+        if (value == 'singleclick') {
+            select = selectSingleClick;
+        }
+        if (value == 'click') {
+            select = selectClick;
+        }
+        if (select !== null) {
+            map.addInteraction(select);
+            select.on('select', function(e) {  //选择到要素,竟然是这个函数先触发
+                //高亮要素,获取城市信息
+                //var fl = select.getFeatures().getArray().length;
+                //var fJ = select.getFeatures().get('center');
+                //var fC = select.getFeatures().getArray()[0].get('center');
+                //var fI =  e.target.getFeatures().getArray()[0].get('center');
+                // var fF =  e.target.getFeatures().getArray()[0].getProperties();
+                // var mName = fF.center;
+                var mFeatures = e.target.getFeatures();
+                //console.log(mFeatures);
+                var mFeatureArray = mFeatures.getArray();
+               // console.log(mFeatureArray);
+                var mFeature = mFeatureArray[0];
+                var mProperties = mFeature.getProperties();
+               // console.log(mFeature);
+                var mTime = mProperties.time; //直接换成time，属性名称  获取到时间属性
+                var mx = mProperties.Labelx; //直接换成time，属性名称  获取到时间属性
+                var my = mProperties.Labely; //直接换成time，属性名称  获取到时间属性
+               // console.log(mName);
+                //var fP =  e.target.getProperties();//这个好像get到了object.CODE
+                //var code = e.target.get('time');//好像取出来了也这一句在前文是取出拉了的  这里只能去出undefined
+
+               var showLBS = ol.proj.transform([mx,my+3], 'EPSG:4326', 'EPSG:3857');
+                content.innerHTML = 'time:<code>' + mTime + '</code>';//还需要添加城市信息
+                overlay.setPosition(showLBS);
+                map.addOverlay(overlay);
+                
+                map.on('singleclick', function(evt) {  //选择到点,获取坐标 这样嵌套写真的没问题吗
+                    var coordinate = evt.coordinate;
+                    var hdms = ol.coordinate.toStringHDMS(ol.proj.transform(
+                        coordinate, 'EPSG:3857', 'EPSG:4326'));
+                    //alert(coordinate);//undefined
+                    content.innerHTML = '<p>You clicked here:</p><code>' + hdms + '</code>';
+                    //载入选择feature处获得的时间/城市信息，判断如果没有获取到城市信息，则显示“无
+                    overlay.setPosition(coordinate);
+                    map.addOverlay(overlay);
+                });
+
+//var coordinates = e.target.getGeometry().getCoordinates()[0];
+                // var polygon = e.feature.getGeometry();//有误
+                //var center = polygon.getCenter(),radius = polygon.getRadius(),extent = polygon.getExtent();
+                //alert(center);//undefined
+                // var geomType = e.target.getFeatures().getArray()[0].getGeometry().getType().toLowerCase();
+                //console.log(mName);
+                //alert(mName);//undefined
+            });
+
+
+
+        }
+    };
+
+    selectElement.onchange = changeInteraction;
+    changeInteraction();
+
+
+</script>
+
+
+<!--热点属性图例-->
+<div id="HotpotLegend" style="width: 3%;height:50px;z-index:3;bottom:0;margin-bottom: 600px;margin-left: 1040px;position:absolute;">
+<svg xmlns="https://www.w3.org/TR/SVG/">
+  <circle cx="60" cy="20" r="10" style="stroke:#CD4F39; fill:transparent"/>
+  <circle cx="100" cy="20" r="10" style="stroke:#FFA54F; fill:transparent"/>
+  <circle cx="140" cy="20" r="10" style="stroke:#FF7256; fill:transparent"/>
+  <circle cx="180" cy="20" r="10" style="stroke:#FFD700; fill:transparent"/>
+</svg>
+</div>
+<div id="HotpotText" style="width: 10%;height:50px;z-index:3;bottom:0;margin-bottom: 580px;margin-left: 1080px;position:absolute;font-family: sans-serif;
+	color:#828282;
+	font-size: 11px">
+<p>continue&nbspinterim&nbsp&nbsp&nbspvanish&nbsp&nbsp&nbsp&nbspnew</p>
+</div>
+
+
+<!--空间热点年份切换控件-->
+<div class="myControll2" style="width: 10%;height:50px;z-index:3;bottom:0">
+    <button id="TimeOne" class="Mybutton2" onclick="changeTimeOne()"></button>
+    
+</div>
+<div class="myControll3" style="width: 10%;height:50px;z-index:3;bottom:0">
+    <button id="TimeTwo"  class="Mybutton2" onclick="changeTimeTwo()"></button>
+</div>
+<div class="myControll4" style="width: 10%;height:50px;z-index:3;bottom:0">
+    <button id="TimeThree" class="Mybutton2" onclick="changeTimeThree()"></button>
+</div>
+<div class="myControll5" style="width: 10%;height:50px;z-index:3;bottom:0">
+	<button id="TimeFour" class="Mybutton2" onclick="changeTimeFour()"></button>
+</div>
+<div class="myControll6" style="width: 10%;height:50px;z-index:3;bottom:0">
+	<button id="TimeFive" class="Mybutton2" onclick="changeTimeFive()"></button>
+</div>
+
+<div class="divcss5-a"  style="width: 1%;height:40px;z-index:3;bottom:0;position:absolute;margin-bottom: 575px;margin-left: 1277px;"> 
+<p class="MyTime" >
+1976<br /> 
+<br /> 
+<br />
+<br />  
+<br /> 
+1986<br /> 
+<br /> 
+<br /> 
+<br /> 
+<br /> 
+1996<br /> 
+<br /> 
+<br /> 
+<br /> 
+<br /> 
+2006<br /> 
+<br /> 
+<br /> 
+<br /> 
+<br /> 
+2016<br /> 
+</p>
+</div> 
+
+<script>
+ var changeTimeOne = function() {  //所有空间热点设置相同的半径
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2;
+        DrawHotpot(Center1976Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center1976Data,Anivector);//运行 加载动效函数
+ };
+  var changeTimeTwo = function() {
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2;
+        DrawHotpot(Center1986Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center1986Data,Anivector);//运行 加载动效函数
+ };
+  var changeTimeThree = function() {
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2;
+        DrawHotpot(Center1996Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center1996Data,Anivector);//运行 加载动效函数
+ };
+  var changeTimeFour = function() {
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2
+        DrawHotpot(Center2006Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center2006Data,Anivector);//运行 加载动效函数
+ };
+  var changeTimeFive = function() {
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 0;
+		timetag = 2;
+        DrawHotpot(Center2016Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center2016Data,Anivector);//运行 加载动效函数
+ };
+</script>
+
+
+<!--时空热点图层切换控件-->
+<div class="myControll1" style="width: 12%;height:48px;z-index:3;bottom:0">
+    <button id="buttonOne" class="Mybutton" onclick="changeDataOne()"></button>
+    <button id="buttonTwo"  class="Mybutton" onclick="changeDataTwo()"></button>
+    <button id="buttonThree" class="Mybutton" onclick="changeDataThree()"></button>
+    <!--p class="MyTitle" >SCAN EXTENT</p-->
+</div>
+
+<!--上层图表框架-->
+<!--div id="myCharts" style="width: 99%;height:255px;position:absolute;z-index:1;bottom:0;background: #B0C4DE;opacity: 0.5;"-->
+<!--底层背景 start-->
+<div class="myCharts" style="width: 99%;height:240px;z-index:1;bottom:0">
+
+<script>  //更新图层 改变datatag
+    //datatag
+    var changeDataOne = function() {
+        //清空现有图层
+        //map.removeLayer(CirclevectorLayer);//只能运行一次
+        //CirclevectorLayer.clear();
+        //CirclevectorLayer.refresh();
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        //接受来自按钮1的标志
+        datatag = 1;
+		timetag = 0;
+        //layer2= createLayer("layername", "layerid", f);
+        //map.addLayer(layer2);
+        DrawHotpot(Center25Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center25Data,Anivector);//运行 加载动效函数
+       // map.render();
+        //alert("Loaded");
+        //map.addLayer(CirclevectorLayer);
+
+    };
+    var changeDataTwo = function() {
+    //接受来自按钮2的标志
+
+        //清空现有图层
+        //map.removeLayer(CirclevectorLayer);//只能运行一次
+        //CirclevectorLayer.clear();
+        //CirclevectorLayer.refresh();
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        datatag = 2;
+		timetag = 0;
+        //layer2= createLayer("layername", "layerid", f);
+        //map.addLayer(layer2);
+        DrawHotpot(Center50Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center50Data,Anivector);//运行 加载动效函数
+        // map.render();
+        //alert("Loaded");
+        //map.addLayer(CirclevectorLayer);
+};
+    var changeDataThree = function() {
+    //接受来自按钮3的标志  坐标飘了
+
+        //清空现有图层
+        //map.removeLayer(CirclevectorLayer);//只能运行一次
+        //CirclevectorLayer.clear();
+        //CirclevectorLayer.refresh();
+        CirclevectorSource.clear();
+        Anivector.getSource().clear();
+        //接受来自按钮1的标志
+        datatag = 3;
+		timetag = 0;
+        //layer2= createLayer("layername", "layerid", f);
+        //map.addLayer(layer2);
+        DrawHotpot(Center100Data,CirclevectorLayer);//运行 加载热点函数
+        DrawAni(Center100Data,Anivector);//运行 加载动效函数
+        // map.render();
+        //alert("Loaded");
+        //map.addLayer(CirclevectorLayer);
+};
+</script>
+
+<!--图表模块1-->
+<div id="myChartsOne"  style="width: 70%;height:240px;z-index:2;position:absolute;margin-top:0px;background-image:url('back.png');">
+<script>
+var width  = 950;	//SVG绘制区域的宽度
+	var height = 240;	//SVG绘制区域的高度
+			
+	var svg = d3.select("#myChartsOne")			//选择<body>
+				.append("svg")			//在<body>中添加<svg>
+				.attr("width", width)	//设定<svg>的宽度属性
+				.attr("height", height);//设定<svg>的高度属性
+	
+	//1. 确定初始数据
+/*
+	var dataset = [
+        { name: "PC" , 
+		  sales: [	{ year:2005, profit: 3000 },
+					{ year:2006, profit: 1300 },
+					{ year:2007, profit: 3700 },
+					{ year:2008, profit: 4900 },
+					{ year:2009, profit: 700 }] },
+		{ name: "SmartPhone" , 
+		  sales: [	{ year:2005, profit: 2000 },
+					{ year:2006, profit: 4000 },
+					{ year:2007, profit: 1810 },
+					{ year:2008, profit: 6540 },
+					{ year:2009, profit: 2820 }] },
+		{ name: "Software" , 
+		  sales: [	{ year:2005, profit: 1100 },
+					{ year:2006, profit: 1700 },
+					{ year:2007, profit: 1680 },
+					{ year:2008, profit: 4000 },
+					{ year:2009, profit: 4900 }] }
+    ];
+	
+	*/
+	
+	
+	var dataset = [
+	{ name: "1" , 
+	sales: [{year:1970,profit:39},
+	{year:1971,profit:44},
+	{year:1972,profit:37},
+	{year:1973,profit:44},
+{year:1974,profit:45},
+{year:1975,profit:32},
+{year:1976,profit:71},
+{year:1977,profit:84},
+{year:1978,profit:162},
+{year:1979,profit:250},
+{year:1980,profit:220},
+{year:1981,profit:209},
+{year:1982,profit:232},
+{year:1983,profit:292},
+{year:1984,profit:278},
+{year:1985,profit:234},
+{year:1986,profit:224},
+{year:1987,profit:239},
+{year:1988,profit:288},
+{year:1989,profit:324},
+{year:1990,profit:286},
+{year:1991,profit:398},
+{year:1992,profit:366},
+{year:1994,profit:329},
+{year:1995,profit:217},
+{year:1996,profit:298},
+{year:1997,profit:239},
+{year:1998,profit:81},
+{year:1999,profit:63},
+{year:2000,profit:186},
+{year:2001,profit:164},
+{year:2002,profit:136},
+{year:2003,profit:195},
+{year:2004,profit:79},
+{year:2005,profit:176},
+{year:2006,profit:282},
+{year:2007,profit:174},
+{year:2008,profit:329},
+{year:2009,profit:403},
+{year:2010,profit:276},
+{year:2011,profit:402},
+{year:2012,profit:720},
+{year:2013,profit:832},
+{year:2014,profit:1357},
+{year:2015,profit:1532},
+{year:2016,profit:1154}]},
+	{ name: "2" , 
+	sales: [{year:1970,profit:55},
+{year:1971,profit:43},
+{year:1972,profit:29},
+{year:1973,profit:37},
+{year:1974,profit:40},
+{year:1975,profit:68},
+{year:1976,profit:71},
+{year:1977,profit:68},
+{year:1978,profit:149},
+{year:1979,profit:233},
+{year:1980,profit:181},
+{year:1981,profit:214},
+{year:1982,profit:180},
+{year:1983,profit:198},
+{year:1984,profit:286},
+{year:1985,profit:184},
+{year:1986,profit:200},
+{year:1987,profit:269},
+{year:1988,profit:324},
+{year:1989,profit:378},
+{year:1990,profit:240},
+{year:1991,profit:336},
+{year:1992,profit:335},
+{year:1994,profit:318},
+{year:1995,profit:254},
+{year:1996,profit:233},
+{year:1997,profit:266},
+{year:1998,profit:95},
+{year:1999,profit:61},
+{year:2000,profit:113},
+{year:2001,profit:136},
+{year:2002,profit:145},
+{year:2003,profit:114},
+{year:2004,profit:44},
+{year:2005,profit:69},
+{year:2006,profit:434},
+{year:2007,profit:234},
+{year:2008,profit:155},
+{year:2009,profit:339},
+{year:2010,profit:411},
+{year:2011,profit:376},
+{year:2012,profit:556},
+{year:2013,profit:695},
+{year:2014,profit:1395},
+{year:2015,profit:1292},
+{year:2016,profit:1149}]},
+	{name:"3",
+	sales: [{year:1970,profit:69},
+{year:1971,profit:50},
+{year:1972,profit:38},
+{year:1973,profit:46},
+{year:1974,profit:62},
+{year:1975,profit:74},
+{year:1976,profit:59},
+{year:1977,profit:114},
+{year:1978,profit:125},
+{year:1979,profit:259},
+{year:1980,profit:254},
+{year:1981,profit:207},
+{year:1982,profit:277},
+{year:1983,profit:232},
+{year:1984,profit:374},
+{year:1985,profit:224},
+{year:1986,profit:300},
+{year:1987,profit:227},
+{year:1988,profit:358},
+{year:1989,profit:320},
+{year:1990,profit:398},
+{year:1991,profit:275},
+{year:1992,profit:514},
+{year:1994,profit:419},
+{year:1995,profit:270},
+{year:1996,profit:233},
+{year:1997,profit:256},
+{year:1998,profit:63},
+{year:1999,profit:184},
+{year:2000,profit:95},
+{year:2001,profit:169},
+{year:2002,profit:83},
+{year:2003,profit:195},
+{year:2004,profit:80},
+{year:2005,profit:198},
+{year:2006,profit:120},
+{year:2007,profit:228},
+{year:2008,profit:321},
+{year:2009,profit:412},
+{year:2010,profit:368},
+{year:2011,profit:447},
+{year:2012,profit:655},
+{year:2013,profit:796},
+{year:2014,profit:1521},
+{year:2015,profit:1171},
+{year:2016,profit:1141}]},
+	{name:"4",
+	sales: [
+	{year:1970,profit:79},
+{year:1971,profit:57},
+{year:1972,profit:22},
+{year:1973,profit:44},
+{year:1974,profit:46},
+{year:1975,profit:57},
+{year:1976,profit:78},
+{year:1977,profit:63},
+{year:1978,profit:112},
+{year:1979,profit:212},
+{year:1980,profit:298},
+{year:1981,profit:208},
+{year:1982,profit:251},
+{year:1983,profit:221},
+{year:1984,profit:370},
+{year:1985,profit:156},
+{year:1986,profit:249},
+{year:1987,profit:306},
+{year:1988,profit:276},
+{year:1989,profit:342},
+{year:1990,profit:339},
+{year:1991,profit:327},
+{year:1992,profit:367},
+{year:1994,profit:366},
+{year:1995,profit:169},
+{year:1996,profit:249},
+{year:1997,profit:234},
+{year:1998,profit:66},
+{year:1999,profit:88},
+{year:2000,profit:98},
+{year:2001,profit:116},
+{year:2002,profit:106},
+{year:2003,profit:83},
+{year:2004,profit:95},
+{year:2005,profit:209},
+{year:2006,profit:405},
+{year:2007,profit:217},
+{year:2008,profit:505},
+{year:2009,profit:416},
+{year:2010,profit:359},
+{year:2011,profit:436},
+{year:2012,profit:722},
+{year:2013,profit:990},
+{year:2014,profit:1474},
+{year:2015,profit:1221},
+{year:2016,profit:1112}]},
+	{name:"5",
+	sales: [
+	{year:1970,profit:72},
+{year:1971,profit:56},
+{year:1972,profit:74},
+{year:1973,profit:47},
+{year:1974,profit:51},
+{year:1975,profit:82},
+{year:1976,profit:107},
+{year:1977,profit:81},
+{year:1978,profit:124},
+{year:1979,profit:361},
+{year:1980,profit:198},
+{year:1981,profit:223},
+{year:1982,profit:236},
+{year:1983,profit:296},
+{year:1984,profit:299},
+{year:1985,profit:422},
+{year:1986,profit:248},
+{year:1987,profit:246},
+{year:1988,profit:326},
+{year:1989,profit:359},
+{year:1990,profit:413},
+{year:1991,profit:349},
+{year:1992,profit:459},
+{year:1994,profit:315},
+{year:1995,profit:323},
+{year:1996,profit:288},
+{year:1997,profit:189},
+{year:1998,profit:54},
+{year:1999,profit:94},
+{year:2000,profit:130},
+{year:2001,profit:98},
+{year:2002,profit:185},
+{year:2003,profit:157},
+{year:2004,profit:93},
+{year:2005,profit:231},
+{year:2006,profit:215},
+{year:2007,profit:171},
+{year:2008,profit:499},
+{year:2009,profit:417},
+{year:2010,profit:462},
+{year:2011,profit:450},
+{year:2012,profit:842},
+{year:2013,profit:1101},
+{year:2014,profit:1652},
+{year:2015,profit:1310},
+{year:2016,profit:1346}
+	]
+	},
+	{name:"6",
+	sales: [
+	{year:1970,profit:61},
+{year:1971,profit:24},
+{year:1972,profit:34},
+{year:1973,profit:27},
+{year:1974,profit:52},
+{year:1975,profit:49},
+{year:1976,profit:86},
+{year:1977,profit:145},
+{year:1978,profit:99},
+{year:1979,profit:250},
+{year:1980,profit:273},
+{year:1981,profit:175},
+{year:1982,profit:164},
+{year:1983,profit:251},
+{year:1984,profit:249},
+{year:1985,profit:296},
+{year:1986,profit:344},
+{year:1987,profit:295},
+{year:1988,profit:335},
+{year:1989,profit:272},
+{year:1990,profit:394},
+{year:1991,profit:350},
+{year:1992,profit:307},
+{year:1994,profit:243},
+{year:1995,profit:289},
+{year:1996,profit:190},
+{year:1997,profit:308},
+{year:1998,profit:41},
+{year:1999,profit:183},
+{year:2000,profit:167},
+{year:2001,profit:80},
+{year:2002,profit:108},
+{year:2003,profit:62},
+{year:2004,profit:156},
+{year:2005,profit:144},
+{year:2006,profit:120},
+{year:2007,profit:588},
+{year:2008,profit:510},
+{year:2009,profit:432},
+{year:2010,profit:376},
+{year:2011,profit:399},
+{year:2012,profit:768},
+{year:2013,profit:853},
+{year:2014,profit:1401},
+{year:2015,profit:1159},
+{year:2016,profit:1146}
+	]
+	},
+	{name:"7",
+	sales: [
+	{year:1970,profit:68},
+{year:1971,profit:24},
+{year:1972,profit:61},
+{year:1973,profit:33},
+{year:1974,profit:33},
+{year:1975,profit:43},
+{year:1976,profit:80},
+{year:1977,profit:133},
+{year:1978,profit:77},
+{year:1979,profit:160},
+{year:1980,profit:224},
+{year:1981,profit:196},
+{year:1982,profit:216},
+{year:1983,profit:218},
+{year:1984,profit:345},
+{year:1985,profit:263},
+{year:1986,profit:266},
+{year:1987,profit:297},
+{year:1988,profit:340},
+{year:1989,profit:323},
+{year:1990,profit:371},
+{year:1991,profit:514},
+{year:1992,profit:389},
+{year:1994,profit:257},
+{year:1995,profit:305},
+{year:1996,profit:276},
+{year:1997,profit:337},
+{year:1998,profit:105},
+{year:1999,profit:158},
+{year:2000,profit:157},
+{year:2001,profit:78},
+{year:2002,profit:93},
+{year:2003,profit:117},
+{year:2004,profit:113},
+{year:2005,profit:268},
+{year:2006,profit:266},
+{year:2007,profit:223},
+{year:2008,profit:553},
+{year:2009,profit:467},
+{year:2010,profit:410},
+{year:2011,profit:387},
+{year:2012,profit:743},
+{year:2013,profit:1167},
+{year:2014,profit:1728},
+{year:2015,profit:1260},
+{year:2016,profit:1104}
+	]
+	},
+	{name:"8",
+	sales: [
+	{year:1970,profit:42},
+{year:1971,profit:47},
+{year:1972,profit:49},
+{year:1973,profit:37},
+{year:1974,profit:31},
+{year:1975,profit:67},
+{year:1976,profit:72},
+{year:1977,profit:136},
+{year:1978,profit:101},
+{year:1979,profit:210},
+{year:1980,profit:183},
+{year:1981,profit:265},
+{year:1982,profit:224},
+{year:1983,profit:225},
+{year:1984,profit:331},
+{year:1985,profit:266},
+{year:1986,profit:236},
+{year:1987,profit:289},
+{year:1988,profit:260},
+{year:1989,profit:366},
+{year:1990,profit:339},
+{year:1991,profit:426},
+{year:1992,profit:390},
+{year:1994,profit:212},
+{year:1995,profit:247},
+{year:1996,profit:234},
+{year:1997,profit:349},
+{year:1998,profit:125},
+{year:1999,profit:113},
+{year:2000,profit:120},
+{year:2001,profit:568},
+{year:2002,profit:142},
+{year:2003,profit:35},
+{year:2004,profit:121},
+{year:2005,profit:260},
+{year:2006,profit:238},
+{year:2007,profit:200},
+{year:2008,profit:461},
+{year:2009,profit:401},
+{year:2010,profit:409},
+{year:2011,profit:341},
+{year:2012,profit:815},
+{year:2013,profit:1034},
+{year:2014,profit:1358},
+{year:2015,profit:1286},
+{year:2016,profit:1152}
+	]
+	},
+	{name:"9",
+	sales: [
+	{year:1970,profit:42},
+{year:1971,profit:37},
+{year:1972,profit:35},
+{year:1973,profit:37},
+{year:1974,profit:47},
+{year:1975,profit:71},
+{year:1976,profit:73},
+{year:1977,profit:97},
+{year:1978,profit:127},
+{year:1979,profit:177},
+{year:1980,profit:216},
+{year:1981,profit:187},
+{year:1982,profit:173},
+{year:1983,profit:236},
+{year:1984,profit:294},
+{year:1985,profit:205},
+{year:1986,profit:216},
+{year:1987,profit:289},
+{year:1988,profit:238},
+{year:1989,profit:499},
+{year:1990,profit:294},
+{year:1991,profit:406},
+{year:1992,profit:456},
+{year:1994,profit:245},
+{year:1995,profit:300},
+{year:1996,profit:287},
+{year:1997,profit:257},
+{year:1998,profit:65},
+{year:1999,profit:79},
+{year:2000,profit:227},
+{year:2001,profit:141},
+{year:2002,profit:75},
+{year:2003,profit:74},
+{year:2004,profit:105},
+{year:2005,profit:119},
+{year:2006,profit:158},
+{year:2007,profit:165},
+{year:2008,profit:268},
+{year:2009,profit:341},
+{year:2010,profit:527},
+{year:2011,profit:341},
+{year:2012,profit:642},
+{year:2013,profit:955},
+{year:2014,profit:1280},
+{year:2015,profit:1100},
+{year:2016,profit:1039}
+	]
+	},
+	{name:"10",
+	sales: [
+	{year:1970,profit:55},
+{year:1971,profit:26},
+{year:1972,profit:36},
+{year:1973,profit:36},
+{year:1974,profit:53},
+{year:1975,profit:96},
+{year:1976,profit:83},
+{year:1977,profit:165},
+{year:1978,profit:128},
+{year:1979,profit:222},
+{year:1980,profit:240},
+{year:1981,profit:234},
+{year:1982,profit:251},
+{year:1983,profit:259},
+{year:1984,profit:233},
+{year:1985,profit:217},
+{year:1986,profit:199},
+{year:1987,profit:250},
+{year:1988,profit:326},
+{year:1989,profit:472},
+{year:1990,profit:323},
+{year:1991,profit:528},
+{year:1992,profit:508},
+{year:1994,profit:240},
+{year:1995,profit:315},
+{year:1996,profit:305},
+{year:1997,profit:279},
+{year:1998,profit:114},
+{year:1999,profit:165},
+{year:2000,profit:172},
+{year:2001,profit:99},
+{year:2002,profit:94},
+{year:2003,profit:59},
+{year:2004,profit:118},
+{year:2005,profit:145},
+{year:2006,profit:185},
+{year:2007,profit:332},
+{year:2008,profit:328},
+{year:2009,profit:419},
+{year:2010,profit:372},
+{year:2011,profit:402},
+{year:2012,profit:774},
+{year:2013,profit:1157},
+{year:2014,profit:1324},
+{year:2015,profit:1268},
+{year:2016,profit:1130}
+	]
+	},
+	{name:"11",
+	sales: [
+	{year:1970,profit:41},
+{year:1971,profit:39},
+{year:1972,profit:29},
+{year:1973,profit:36},
+{year:1974,profit:65},
+{year:1975,profit:47},
+{year:1976,profit:81},
+{year:1977,profit:76},
+{year:1978,profit:126},
+{year:1979,profit:153},
+{year:1980,profit:207},
+{year:1981,profit:200},
+{year:1982,profit:137},
+{year:1983,profit:233},
+{year:1984,profit:239},
+{year:1985,profit:231},
+{year:1986,profit:166},
+{year:1987,profit:314},
+{year:1988,profit:319},
+{year:1989,profit:377},
+{year:1990,profit:274},
+{year:1991,profit:434},
+{year:1992,profit:532},
+{year:1994,profit:219},
+{year:1995,profit:169},
+{year:1996,profit:212},
+{year:1997,profit:218},
+{year:1998,profit:90},
+{year:1999,profit:142},
+{year:2000,profit:182},
+{year:2001,profit:135},
+{year:2002,profit:104},
+{year:2003,profit:107},
+{year:2004,profit:73},
+{year:2005,profit:74},
+{year:2006,profit:163},
+{year:2007,profit:533},
+{year:2008,profit:431},
+{year:2009,profit:337},
+{year:2010,profit:467},
+{year:2011,profit:662},
+{year:2012,profit:686},
+{year:2013,profit:1208},
+{year:2014,profit:1224},
+{year:2015,profit:1161},
+{year:2016,profit:1101}
+	]
+	},
+	{name:"12",
+	sales: [
+	{year:1970,profit:26},
+{year:1971,profit:23},
+{year:1972,profit:50},
+{year:1973,profit:48},
+{year:1974,profit:52},
+{year:1975,profit:53},
+{year:1976,profit:60},
+{year:1977,profit:152},
+{year:1978,profit:194},
+{year:1979,profit:171},
+{year:1980,profit:168},
+{year:1981,profit:268},
+{year:1982,profit:203},
+{year:1983,profit:209},
+{year:1984,profit:197},
+{year:1985,profit:217},
+{year:1986,profit:211},
+{year:1987,profit:162},
+{year:1988,profit:330},
+{year:1989,profit:291},
+{year:1990,profit:217},
+{year:1991,profit:339},
+{year:1992,profit:450},
+{year:1994,profit:295},
+{year:1995,profit:223},
+{year:1996,profit:251},
+{year:1997,profit:268},
+{year:1998,profit:34},
+{year:1999,profit:64},
+{year:2000,profit:167},
+{year:2001,profit:123},
+{year:2002,profit:60},
+{year:2003,profit:65},
+{year:2004,profit:84},
+{year:2005,profit:115},
+{year:2006,profit:164},
+{year:2007,profit:174},
+{year:2008,profit:443},
+{year:2009,profit:336},
+{year:2010,profit:385},
+{year:2011,profit:428},
+{year:2012,profit:576},
+{year:2013,profit:1208},
+{year:2014,profit:1146},
+{year:2015,profit:1091},
+{year:2016,profit:915}
+	]
+	}
+];
+	
+	//2. 转换数据
+	var stack = d3.layout.stack()
+					.values(function(d){ return d.sales; })
+					.x(function(d){ return d.year; })
+					.y(function(d){ return d.profit; });
+
+	var data = stack(dataset);
+
+	console.log(data);
+		
+		
+	//3. 绘制
+
+	//外边框
+	var padding = { left:40, right:35, top:30, bottom:30 };
+	
+	//创建x轴比例尺
+	var xRangeWidth = width - padding.left - padding.right;//X轴的长度
+		
+	//var xScale = d3.scale.ordinal()
+					//.domain(data[0].sales.map(function(d){ return d.year; }))
+					//.rangeBands([0, xRangeWidth],0.8);//第二个参数控制住柱间距离
+					
+	var xScale = d3.scale.ordinal()
+					.domain(data[0].sales.map(function(d){ return d.year; }))
+					.rangeBands([0, xRangeWidth],0.8);//第二个参数控制住柱间距离
+					
+	//当按照序列坐标轴时， ticks不起作用  can't edit the amount of ticks with an ordinal scale?
+					
+
+	//创建y轴比例尺
+	
+	//最大利润（定义域的最大值）
+	var maxProfit = d3.max(data[data.length-1].sales, function(d){ 
+							return d.y0 + d.y; 
+					});
+	
+	//最大高度（值域的最大值）
+	var yRangeWidth = height - padding.top - padding.bottom;
+	
+	var yScale = d3.scale.linear()
+					.domain([0, maxProfit])		//定义域
+					.range([0, yRangeWidth]);	//值域
+					
+	/*var yScale = d3.scale.log()
+					.base(10)//设置底数
+					.domain([1, maxProfit])		//定义域  不能越过1
+					.range([0, yRangeWidth]);	//值域
+	*/  //极差过大，但是改变为对数比例尺会对所有月份的数据起作用 而不是对整体一年的数据
+	
+
+	
+	//颜色比例尺
+	//var color = d3.scale.category10();
+	color1 = d3.rgb(70,70,70);	
+	color2 = d3.rgb(100,100,100);
+	color3 = d3.rgb(150,150,150);
+	color4 = d3.rgb(200,200,200);
+	//添加分组元素
+	var groups = svg.selectAll("g")
+					.data(data)
+					.enter()
+					.append("g")
+					//.style("fill",function(d,i){ return color(i); });//
+					.style("fill",function(d,i){ 
+					if(data[i].name=='1'||data[i].name=='2'||data[i].name=='3'){return color1;}
+					if(data[i].name=='4'||data[i].name=='5'||data[i].name=='6'){return color2;}
+					if(data[i].name=='7'||data[i].name=='8'||data[i].name=='9'){return color3;}
+					if(data[i].name=='10'||data[i].name=='11'||data[i].name=='12'){return color4;}
+					 });
+		
+	//添加矩形
+	var rects = groups.selectAll("rect")
+					.data(function(d){ return d.sales; })
+					.enter()
+					.append("rect")
+					.attr("x",function(d){ return xScale(d.year); })
+					.attr("y",function(d){ return yRangeWidth - yScale( d.y0 + d.y ); })
+					.attr("width",function(d){ return xScale.rangeBand(); })
+					.attr("height",function(d){ return yScale(d.y); })
+					.attr("transform","translate(" + padding.left + "," + padding.top + ")");
+	
+	//添加坐标轴
+	var xAxis = d3.svg.axis()
+				.scale(xScale)
+				.orient("bottom")
+				.ticks(5)
+				.tickValues([1970,1975,1980,1985,1990,1995,2000,2005,2010,2015]); // 分成5等分，有时d3会根据可用空间和它自己的计算多画几个或者少画几个
+				//.tickSubdivide(4);  // 刻度值与坐标轴之间的距离
+				
+				
+		
+	yScale.range([yRangeWidth, 0.5]);
+	
+	var yAxis = d3.svg.axis()
+					.scale(yScale)
+					.orient("left")
+					.ticks(5);
+					
+	svg.append("g")
+			.attr("class","axis")
+			.attr("transform","translate(" + padding.left + "," + (height - padding.bottom) +  ")")
+			.call(xAxis);
+				
+	svg.append("g")
+			.attr("class","axis")
+			.attr("transform","translate(" + padding.left + "," + (height - padding.bottom - yRangeWidth) +  ")")
+			.call(yAxis); 
+			
+	//添加分组标签
+	var labHeight = 15;
+	var labRadius = 2;
+	
+	var labelCircle = groups.append("circle")
+						.attr("cx",function(d){ return width - padding.right*0.98; })
+						.attr("cy",function(d,i){ return padding.top * 1.1 + labHeight * i; })
+						.attr("r",labRadius);
+					
+	var labelText = groups.append("text")
+						.attr("x",function(d){ return width - padding.right*0.8; })
+						.attr("y",function(d,i){ return padding.top * 1.1 + labHeight * i; })
+						.attr("dy",labRadius/2)
+						.text(function(d){ return d.name; })
+						.style('font-size', '9px')
+						.style('font-family', 'sans-serif');
+			
+</script>
+
+<!--script 测试代码>
+
+
+//统计图表示例
+var width = 300;	//画布的宽度
+var height = 250;	//画布的高度
+
+var svg = d3.select("#myChartsOne")				//选择文档中的div id
+    .append("svg")				//添加一个svg元素
+    .attr("width", width)		//设定宽度
+    .attr("height", height);	//设定高度
+
+var dataset = [ 250 , 210 , 170 , 130 , 90 ];
+
+var rectHeight = 25;	//每个矩形所占的像素高度(包括空白)
+
+svg.selectAll("rect")
+    .data(dataset)
+    .enter()
+    .append("rect")
+    .attr("x",20)
+    .attr("y",function(d,i){
+        return i * rectHeight;
+    })
+    .attr("width",function(d){
+        return d;
+    })
+    .attr("height",rectHeight-2)
+    .attr("fill","#191970");
+</script-->
+</div>
+
+<div id="myTimeButton" style="width: 15%;height:20px;z-index:4;position:absolute;margin-top:22px;margin-left:50px;">
+<button id="TimeYear" class="Mybutton3" onclick="DrawYear()"></button>
+</div>
+<div id="myTimeButton" style="width: 15%;height:20px;z-index:4;position:absolute;margin-top:47px;margin-left:50px;">
+<button id="TimeSeason" class="Mybutton3" onclick="DrawSeason()"></button>
+</div>
+<div id="myTimeButton" style="width: 15%;height:20px;z-index:4;position:absolute;margin-top:72px;margin-left:50px;">
+<button id="TimeMonth" class="Mybutton3" onclick="DrawMonth()"></button>
+</div>
+
+<div id="myTimeButton" style="width: 15%;height:20px;z-index:4;position:absolute;margin-top:21px;margin-left:63px;font-family: sans-serif;color:#828282;font-size: 11px">
+<p>Year Hotspot</p>
+<p>Season Hotspot</p>
+<p>Month Hotspot</p>
+</div>
+
+<div  style="width: 20%;height:255px;z-index:4;position:absolute;margin-top:21px;margin-left:680px;">
+<svg width="100%" height="100%" version="1.1"
+xmlns="http://www.w3.org/2000/svg">
+<circle cx="181" cy="200" r="4" style="stroke:rgb(255,165,79); fill:transparent"/>
+<line x1="175" y1="48" x2="175" y2="95"
+style="stroke:rgb(255,114,86);stroke-width:1"/>
+<line x1="188" y1="78" x2="188" y2="95"
+style="stroke:rgb(255,215,0);stroke-width:1"/>
+</svg>
+</div>
+
+
+
+<!--图表模块2-->
+<div id="myCharts2" style="width: 29.5%;height:240px;z-index:2;position:absolute;margin-top:0px;margin-left:70.5%;background-image:url('back.png');">
+    <!--div id="listtitle" style="width: 6%;height:90px;z-index:3;position:absolute;margin-top:5px;margin-left:93%;background-image:url('listtitle.png');background-size:contain;"></div-->
+
+    <div class="ScrollDiv" style="overflow:scroll;width: 96%;height:240px;z-index:3;position:absolute;margin-top:5px;margin-left:5px">
+    <table class="dataintable" style="font-family:sans-serif;color:#8B8989;font-size: 10px">
+        <tbody>
+            <tr><td>Hai Zhu Direct,Hua Cheng Guang Chang #255,2018/04/19</td></tr>
+            <tr><td>Zhong Shan Road,Middle Area,2015/02/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Tian He Direct,Middle Area,2014/01/13</td></tr>
+            <tr><td>Zhong Shan Road,Middle Area,2015/02/13</td></tr>
+            <tr><td>Zhong Shan Road,Middle Area,2015/02/13</td></tr>
+        </tbody>
+    </table>
+    </div>
+</div>
+
+
+ </div>
+<!--底层背景 end-->
+
+
+
+</body>
+</html>
